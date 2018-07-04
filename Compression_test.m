@@ -1,5 +1,6 @@
 %% Fine-er grain compression 
-
+    % For the lighting transitions 
+    
 % Load data 
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'threads');
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'idx_numComp_sorted');
@@ -31,22 +32,30 @@ totSavings_cells = cell(size(threads,1),1); % fish x 1
 threads = threads(:,:,1); % removed shuffled data (eases worker memory) 
 
 tic
+errors = []; 
 parfor f = 1:size(threads,1) % for each fish
-    counter = 1; % counts lb boundaries 
-    set_token = i_experiment_tags(f); % used for each experiments sets settings 
+    counter = 1; % counts lb boundaries
+    set_token = i_experiment_tags(f); % used for each experiments sets settings
     
     for bound = min(time_window{set_token}):max(time_window{set_token}) % for each transition
-        
         l_b = find(threads{f,2,1}(:,1) < lb{set_token}(bound),1,'last');
-        chunks{f,1}(counter,:) = threads{f,1,1}(l_b-749:l_b+1250,1);
         
-        for t = 1:(length(chunks{f,1})-step) % for each chunk
-            [~,~, totSavings_cells{f,1}(counter,t)] = ...
-                compressSequenceNFast(chunks{f,1}(counter,t:(t+(step-1))),...
-                sMax,nMax); % compress returning totSavings
+        try
+            chunks{f,1}(counter,:) = threads{f,1,1}(l_b-749:l_b+1250,1);
+            
+            for t = 1:(length(chunks{f,1})-step) % for each chunk
+                [~,~, totSavings_cells{f,1}(counter,t)] = ...
+                    compressSequenceNFast(chunks{f,1}(counter,t:(t+(step-1))),...
+                    sMax,nMax); % compress returning totSavings
+            end
+            
+        catch % catch animals with few modules before the transition 
+            chunks{f,1}(counter,1:2000) = NaN;
+            totSavings_cells{f,1}(counter,1:1500) = NaN; 
+            errors = [errors ; horzcat(num2str(f),'f,',num2str(counter))]; 
         end
         
-        counter = counter + 1; 
+        counter = counter + 1;
         
     end
     
