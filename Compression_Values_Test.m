@@ -5,22 +5,6 @@ step = 500;
 sMax = 11; % Maximum states + 1 (first new symbol)
 nMax = 10; % Maximum n-grams to consider
 
-%%  Deterministic 
-scrap = [1 6 2 7 3 8 4 9 5 10];
-scrap = repmat(scrap,1,step/length(scrap));
-[~,~,totSavings] = compressSequenceNFast(scrap,sMax,nMax); 
-
-%% Random Sampling 
-
-for f = 1:500
-    a = datasample(1:2,1); 
-    b = setdiff(1:2,a); 
-    scrap = nan(1,step,'single');
-    scrap(a:2:end) = datasample(1:5,step/2,'Replace',true);
-    scrap(b:2:end) = datasample(6:10,step/2,'Replace',true);
-    [~,~,totSavings(f)] = compressSequenceNFast(scrap,sMax,nMax);
-end
-
 %% Shuffled 
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180524_Hours.mat', 'threads'); 
 
@@ -33,9 +17,9 @@ load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180524_Hours.mat', 'threa
 chunks = cell(size(threads,1),1); % fish x 1
 totSavings_cells = cell(size(threads,1),1); % fish x 1
 
-for f = 1:size(threads,1) 
+for f = 1:size(threads,1) % for each fish
         chunks{f,1} = find(threads{f,3,1} == 1,1,'first'):...
-        step:find(isnan(threads{f,3,1}) == 0,1,'last'); 
+        step:find(isnan(threads{f,3,1}) == 0,1,'last'); % chunk data  
 end 
 
 tic
@@ -87,3 +71,19 @@ for f = 1:size(threads,1) % for each fish
 end
 
 clear f h 
+
+%%  Deterministic 
+scrap = [1 6 2 7 3 8 4 9 5 10];
+scrap = repmat(scrap,1,step/length(scrap));
+[~,~,totSavings] = compressSequenceNFast(scrap,sMax,nMax); 
+
+%% Random Sampling 
+
+for f = 1:500
+    a = datasample(1:2,1); 
+    b = setdiff(1:2,a); 
+    scrap = nan(1,step,'single');
+    scrap(a:2:end) = datasample(1:5,step/2,'Replace',true);
+    scrap(b:2:end) = datasample(6:10,step/2,'Replace',true);
+    [~,~,totSavings(f)] = compressSequenceNFast(scrap,sMax,nMax);
+end
