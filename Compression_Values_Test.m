@@ -33,8 +33,6 @@ parfor f = 1:size(threads,1) % for each fish
         end
     end
     
-    chunks{f,1}(end) = []; % remove the spare edge
-    
     disp(num2str(f));
     
 end
@@ -56,6 +54,10 @@ compressibility = nan(size(threads,1),tw,size(threads,3),'single'); % fish x max
 
 % fill data
 for f = 1:size(threads,1) % for each fish
+    
+        %chunks{f,1}(end) = []; % remove the spare edge
+
+        
     for tc = 1:size(threads,3) % for real and shuffled data
         for h = 1:max(threads{f,3,1}) % for each hour
             try
