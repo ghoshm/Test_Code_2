@@ -40,7 +40,7 @@ parfor f = 1:size(threads,1) % for each fish
 end
 toc
 
-clear sMax nMax f t
+clear f tc t
 
 %% Reshape Chunks & Calculate Compression  
     % The compressibility of a sequence of uncompressed length l is given by the sum of the savings S
