@@ -184,7 +184,6 @@ clear er set_token g scrap counter data
 dn_hour(1:14) = 1; dn_hour(15:24) = 2; dn_hour(25:38) = 3; dn_hour(39:48) = 4;
 
 er = 1; g = 1; 
-set_token = find(experiment_reps == er,1,'first'); % settings
 clear data;
 
 % average day per fish
@@ -211,10 +210,6 @@ anova_experiment = repmat(i_experiment_tags(i_experiment_reps == er),4,1);
 [twa.p(:,1),~,twa.stats{er}] = anovan(data,...
     {anova_group,anova_time,anova_development,anova_experiment},...
     'display','off','model','full');
-
-
-clear er anova_group anova_experiment anova_time t anova_development d data
-
 
 %%  Deterministic Data 
 scrap = [1 6 2 7 3 8 4 9 5 10];
