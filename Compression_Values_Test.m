@@ -128,16 +128,16 @@ for er = 1:max(experiment_reps) % for each group of experiments
         
             data = [compressibility_r shuffled data]; 
             
-            % random data 
-            plot([counter,counter+1],data(:,1:2)',...
-                'color',[1 0.5 0] + (1-[1 0.5 0])*(1-(1/(5)^.5)),'linewidth',1.5)
+            % random data (compressibility_r)
+            plot([counter,counter+1],data(:,1:2),...
+                'color',[1 0.5 0] + (1-[1 0.5 0])*(1-(1/(5)^.5)),'linewidth',1.5);
              errorbar([counter,counter+1],nanmean(data(:,1:2)),nanstd(data(:,1:2)),...
                 'color',[1 0.5 0],'linewidth',3);
             counter = counter + 2; 
             
             % shuffled data 
-            plot([counter,counter+1],data(:,3:4)',...
-                'color',([1 1 1]*(1-(1/(5)^.5))),'linewidth',1.5)
+            plot([counter,counter+1],data(:,3:4),...
+                'color',([1 1 1]*(1-(1/(5)^.5))),'linewidth',1.5);
             errorbar([counter,counter+1],nanmean(data(:,3:4)),nanstd(data(:,3:4)),...
                 'color',[0 0 0],'linewidth',3); 
             counter = counter + 2;
@@ -170,7 +170,6 @@ for er = 1:max(experiment_reps) % for each group of experiments
         set(gca,'XTick',1.5:2:(max(i_group_tags(i_experiment_reps == er))*2)+.5);
         set(gca,'XTickLabels',geno_list{set_token}.colheaders); % X Labels
         set(ax(er),'XLim',[.5 (max(i_group_tags(i_experiment_reps == er))*2)+.5]); % set x limits for all subplots
-
     end
     xlabel('Data','Fontsize',32);
     ylabel({'Compressibility' ; '(per 500 modules)'},'Fontsize',32); % Y Labels
