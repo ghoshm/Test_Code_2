@@ -2,13 +2,16 @@
 
 %% mRMR Ideas 
 
+% Clear data before processing 
 clear comps* er set_token mRMR* Mdl*
 comps = 250; 
-er = 2; 
+er = 1; 
 set_token = find(experiment_reps == er,1,'first'); % settings
 
-% Specific which data you want 
+% Data to Save 
+clearvars -except comps comps_v er set_token Mdl_loss mRMR_data mRMR_tw mRMR_ms mRMR_tsne 
 
+% Specify which data you want 
 % Development 
 
 % WT Keep Days 
@@ -116,7 +119,7 @@ end
 
 gscatter(mRMR_tsne{er,1}(:,1),mRMR_tsne{er,1}(:,2),mRMR_tw{er,1}); 
 
-%% New Messing Around 
+%% "Leave one out" Classifiers 
 
 comps = 250; % number of motifs to find 
 
@@ -125,8 +128,8 @@ tic
 counter = 1;
 for g_one = min(mRMR_tw{er,1}):max(mRMR_tw{er,1}) % for each group (hour)
     
-    tags = ones(size(mRMR_tw{er,1}))*2; % all data
-    tags(mRMR_tw{er,1} == g_one) = 1; % group of interest
+    tags = ones(size(mRMR_tw{er,1}))*2; % all data (marked as 2)
+    tags(mRMR_tw{er,1} == g_one) = 1; % group of interest (marked as 1) 
     
     % mRMR
     [comps_v{er,1}(counter,:)] = mrmr_miq_d(...
@@ -175,7 +178,7 @@ motifs = [];
 for c = 1:size(comps_v{er,1},1) % for each comparison
     motifs = [motifs comps_v{er,1}(c,1:mRMR_ms(er,c))];
 end 
-motifs = unique(motifs);   
+motifs = unique(motifs); % keep only unique motifs    
 
 data = gCount_norm{1,1}(motifs,...
     1,...
@@ -183,13 +186,14 @@ i_experiment_reps == er); % take DAY data
 
 data = squeeze(data); % reshape to motifs x fish 
 
-[coeff,score,~,~,explained,~] = pca(data'); 
+[coeff,score,~,~,explained,~] = pca(data'); % pca 
 
 mRMR_tsne{er,1} = tsne(data',...
-    'Algorithm','exact','Exaggeration',4,'NumDimensions',2,'NumPCAComponents',4,...
-    'Perplexity',30,'Standardize',1,'Verbose',1);
+    'Algorithm','exact','Exaggeration',4,'NumDimensions',2,'NumPCAComponents',0,...
+    'Perplexity',30,'Standardize',1,'Verbose',1); % tSNE
 
-%% Work on This... 
+%% Leave One Out Classifiers Figure 
+
 figure;
 clear legend_cols legend_cell
 
@@ -209,7 +213,7 @@ for s = flip(comps_v{er,1}(:,1))' % for each motif
             a = a + ibl(seq(t)); % add to time
         else % for the active modules
             plot(a:(a+length(nanmean(bouts{1,seq(t)-numComp(1)}))+1),...
-                [b ((nanmean(bouts{1,seq(t)-numComp(1)})/25)+b) b],...
+                [b ((nanmean(bouts{1,seq(t)-numComp(1)})/28)+b) b],...
                 'color',cmap_cluster_merge(seq(t),:),'linewidth',5); % plot
             a = a + length(nanmean(bouts{1,seq(t)-numComp(1)})) + 1; % add to time
         end
@@ -229,28 +233,28 @@ set(gca,'YTick',1:max(i_group_tags(i_experiment_reps == er)));
 set(gca,'YTickLabels',flip(geno_list{set_token}.colheaders),'Fontsize',32); 
 
 % Legend
-for s = 1:length(cmap_cluster_merge) % for each module
-    if s <= numComp(1) % for the inactive modules
-        scatter(max(xlim)-40,(s/5)+(size(comps_v{er,1},1)-.5),90,'markerfacecolor',cmap_cluster_merge(s,:),...
-            'markeredgecolor','k');
-    else % for the active modules
-        scatter(max(xlim)-10,((s-numComp(1))/5)+(size(comps_v{er,1},1)-.5),90,'markerfacecolor',cmap_cluster_merge(s,:),...
-            'markeredgecolor','k');
-    end
-end
-text(max(xlim)-95,(size(comps_v{er,1},1)+.75),'Module','FontName','Calibri','Fontsize',24);
+% for s = 1:length(cmap_cluster_merge) % for each module
+%     if s <= numComp(1) % for the inactive modules
+%         scatter(max(xlim)-40,(s/5)+(size(comps_v{er,1},1)-.5),90,'markerfacecolor',cmap_cluster_merge(s,:),...
+%             'markeredgecolor','k');
+%     else % for the active modules
+%         scatter(max(xlim)-10,((s-numComp(1))/5)+(size(comps_v{er,1},1)-.5),90,'markerfacecolor',cmap_cluster_merge(s,:),...
+%             'markeredgecolor','k');
+%     end
+% end
+% text(max(xlim)-95,(size(comps_v{er,1},1)+.75),'Module','FontName','Calibri','Fontsize',24);
 
 % Scores 
 subplot(1,3,2); 
 hold on; set(gca,'FontName','Calibri'); box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
 
 data = gCount_norm{1,1}(comps_v{er,1}(:,1),1,i_experiment_reps == er); % DAY 1 
-data = squeeze(data);
-data = flip(data); 
-shift = abs(min(data(:))) + 1;
+data = squeeze(data); % motifs x fish
+data = flip(data); % flipped  
+shift = abs(min(data(:))) + 1; % shift so that min(data(:)) == 1 (for Log axis) 
 plot([shift shift],[.5 size(comps_v{er,1},1)+1],'-k','linewidth',1.5); 
 
-data = data + shift; 
+data = data + shift; % shift data so that min(data(:)) == 1 
 
 for g = 1:max(i_group_tags(i_experiment_reps == er)) % for each group 
     spread_cols = plotSpread(data(:,i_group_tags(i_experiment_reps == er) == g)',...
@@ -258,7 +262,7 @@ for g = 1:max(i_group_tags(i_experiment_reps == er)) % for each group
         'distributionColors',...
         cmap{set_token}(g,:)+(1-cmap{set_token}(g,:))*(1-(1/(5)^.5)),'XValues',...
         (1:size(data,1)) + (max(i_group_tags(i_experiment_reps == er))-1)/10 - (g-1)/10);
-    set(findall(gca,'type','line'),'markersize',9); % change
+    set(findall(gca,'type','line'),'markersize',9); % change marker size 
     
     legend_cols(g,:) = errorbar(nanmean(data(:,i_group_tags(i_experiment_reps == er) == g),2),...
         ((1:size(data,1)) + (max(i_group_tags(i_experiment_reps == er))-1)/10 - (g-1)/10),...
@@ -285,7 +289,7 @@ set(gca,'YTick',[]);
 subplot(1,3,3); 
 hold on; set(gca,'FontName','Calibri'); box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
 
-for g = 1:max(i_group_tags(i_experiment_reps == er))
+for g = 1:max(i_group_tags(i_experiment_reps == er)) % for each group 
     x = double(mRMR_tsne{er,1}(i_group_tags(i_experiment_reps == er) == g,1)); 
     y = double(mRMR_tsne{er,1}(i_group_tags(i_experiment_reps == er) == g,2)); 
     k = boundary(x,y);  
@@ -301,6 +305,7 @@ end
 set(gca,'XTick',[]); set(gca,'YTick',[]); 
 xlabel('tSNE 1','Fontsize',32); 
 ylabel('tSNE 2','Fontsize',32); 
+axis tight; 
 
 %% Hours Data 
 
