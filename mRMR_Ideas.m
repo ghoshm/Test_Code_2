@@ -4,14 +4,14 @@
 
 % Clear data before processing 
 clear comps* er set_token mRMR* Mdl*
-comps = 250; 
-er = 1; 
+comps = 1000; 
+er = 2; 
 set_token = find(experiment_reps == er,1,'first'); % settings
 
 % Data to Save 
 clearvars -except comps comps_v er set_token Mdl_loss mRMR_data mRMR_tw mRMR_ms mRMR_tsne 
 
-% Specify which data you want 
+%% Specify which data you want 
 % Development 
 
 % WT Keep Days 
@@ -47,6 +47,9 @@ mRMR_tw{1,1}(mRMR_tw{1,1} > 19,:) = 2;
 % Startles 
 mRMR_tw{1,1}(mRMR_tw{1,1} == 15,:) = 1; 
 mRMR_tw{1,1}(mRMR_tw{1,1} ~= 1,:) = 2;
+
+%% Corrupt Labels 
+mRMR_tw{er,1} = mRMR_tw{er,1}(randperm(length(mRMR_tw{er,1}))); % shuffle labels 
 
 %% NEWER MESSING AROUND 
 data = gCount_norm{1,1}(comps_v{er,1}(2,1:mRMR_ms(er,2)),[4 6],i_experiment_reps == er);
@@ -171,7 +174,7 @@ ibl(1) = []; % remove NaN's
 ibl(end) = 250; % crop longest module to 10s (hard coded)
 
 %% tSNE Calculation 
-er = 4; 
+er = 3; 
 set_token = find(experiment_reps == er,1,'first'); % settings
     
 motifs = [];
