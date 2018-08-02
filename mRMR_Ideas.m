@@ -5,7 +5,7 @@
 % Clear data before processing 
 clear comps* er set_token mRMR* Mdl*
 comps = 1000; 
-er = 2; 
+er = 1; 
 set_token = find(experiment_reps == er,1,'first'); % settings
 
 % Data to Save 
@@ -48,8 +48,63 @@ mRMR_tw{1,1}(mRMR_tw{1,1} > 19,:) = 2;
 mRMR_tw{1,1}(mRMR_tw{1,1} == 15,:) = 1; 
 mRMR_tw{1,1}(mRMR_tw{1,1} ~= 1,:) = 2;
 
-%% Corrupt Labels 
-mRMR_tw{er,1} = mRMR_tw{er,1}(randperm(length(mRMR_tw{er,1}))); % shuffle labels 
+%% Corrupt WT Labels
+    % To test Hcrt Data  
+
+tic 
+counter = 1; % start a counter (counts comparisons)
+for r = 1:10 % for each repeat 
+
+    % Corrupt the labels
+    mRMR_tw{er,1} = repmat(randsrc(length(mRMR_tw{er,1})/2,1,[1 2 3 ; ...
+        histcounts(i_group_tags(i_experiment_reps == 2))/sum(i_experiment_reps == 2)]),2,1);
+
+    %  % Pairwise Comparisons
+    for g_one = min(mRMR_tw{er,1}):max(mRMR_tw{er,1}) % for each group
+        for g_two = (g_one + 1):max(mRMR_tw{er,1}) % for each comparison
+
+            % mRMR
+            [comps_v{er,1}(counter,:)] = mrmr_miq_d(...
+                zscore(mRMR_data{er,1}(mRMR_tw{er,1} == g_one | mRMR_tw{er,1} == g_two,:)),...
+                mRMR_tw{er,1}(mRMR_tw{er,1} == g_one | mRMR_tw{er,1} == g_two,:),comps);
+
+            % Classifiers
+            for s = 1:comps % for each comp sequence
+                % Fit a linear classifier as you add features
+                % Using 10 fold cross validation
+                % Hold 10% of mRMR_data back by default
+                Mdl = fitcdiscr(...
+                    zscore(mRMR_data{er,1}(mRMR_tw{er,1} == g_one | mRMR_tw{er,1} == g_two,...
+                    comps_v{er,1}(counter,1:s))),...
+                    mRMR_tw{er,1}(mRMR_tw{er,1} == g_one | mRMR_tw{er,1} == g_two,:),...
+                    'DiscrimType','linear','CrossVal','on');
+                Mdl_loss{er,1}(counter,s) = kfoldLoss(Mdl);
+                Mdl_loss{er,2}(counter,s) = nanstd(kfoldLoss(Mdl,'Mode','individual'));
+                %disp(num2str(s));
+            end
+
+            % Minimal Feature Space
+            % Note 180509: could also use islocalmin
+            if er == 1 % for the WT data
+                mRMR_ms(er,counter) = find(smooth(Mdl_loss{er,1}(counter,:),3) == ...
+                    min(smooth(Mdl_loss{er,1}(counter,:),3)),1,'first');
+            else
+                %try
+                %mRMR_ms(er,counter) = find(Mdl_loss{er,1}(counter,:) < 0.05,1,'first');
+                %catch
+                mRMR_ms(er,counter) = find(smooth(Mdl_loss{er,1}(counter,:),3) == ...
+                    min(smooth(Mdl_loss{er,1}(counter,:),3)),1,'first');
+                %end
+            end
+
+            counter = counter + 1; % add to counter (counts comparisons)
+        end
+    end
+    disp(horzcat('Finished mRMR Comparisons ',num2str(er),' of ',...
+        num2str(max(experiment_reps)))); % report progress
+
+end
+toc 
 
 %% NEWER MESSING AROUND 
 data = gCount_norm{1,1}(comps_v{er,1}(2,1:mRMR_ms(er,2)),[4 6],i_experiment_reps == er);
