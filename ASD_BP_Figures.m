@@ -57,6 +57,3 @@ for c = 1:length(m)
         legend('boxoff');
     end
 end 
-
-
-
