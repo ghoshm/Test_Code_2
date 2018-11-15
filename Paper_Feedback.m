@@ -12,6 +12,14 @@ load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'lb_merge');
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'time_window'); 
 time_bins = fps{1}*60*5; % set smoothing window (note assumes a constant frame rate across experiments)
 
+% Sorting by activity 
+temp = states{1,1}; 
+temp(temp <= 5) = NaN; % hard coded
+temp = temp(:,lb_merge{1,1}(time_window{1}(1)):lb_merge{1,1}(time_window{1}(2)+1)); 
+temp(isnan(temp)==0) = 1; 
+[~,O] = sort(nansum(temp,2)); 
+states{1,1} = states{1,1}(flip(O),:);
+
 % Active 
 figure;
 subplot(1,2,1); hold on; set(gca,'FontName','Calibri'); set(gca,'Fontsize',32);
