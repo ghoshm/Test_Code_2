@@ -170,3 +170,85 @@ for tc = 1:size(uniqueSeqs,2)
     xlabel('Module','Fontsize',24);
     ylabel('Probability','Fontsize',24);
 end
+
+%% Analysis Example 
+
+% Load Data
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\mRMR_Comparisons\Comps_250\Melatonin_D.mat');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Grammar_Results_Final.mat', 'gCount');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'grammar_mat');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'numComp');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'sleep_cells');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'idx_numComp_sorted');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap_cluster_merge');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'bouts');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'i_experiment_reps');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'i_group_tags');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'geno_list');
+
+% Choose dataset 
+er = 3;
+
+% Choose Motif (Melatonin 44,768)
+s = comps_v{er,1}(1,1);
+
+% mean inactive module length (frames)
+ibl = grpstats(sleep_cells(:,3),idx_numComp_sorted{2,1},'mean');
+ibl(1) = []; % remove NaN's
+ibl(end) = 250; % crop longest module to 10s (hard coded)
+
+% Plot the Motif
+figure; hold on; set(gca,'FontName','Calibri'); box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
+b = 1; % baseline counter (plots from bottom to top)
+seq = grammar_mat{1,1}(s,:); % find this motifs module sequence
+seq(isnan(seq)) = []; % remove nan values
+a = 1; % start a counter (frames)
+
+for t = 1:length(seq) % for each module in the sequence
+    if seq(t) <= numComp(1) % for the inactive modules
+        plot([a (a+ibl(seq(t)))],[b b],...
+            'color',cmap_cluster_merge(seq(t),:),'linewidth',15); % plot
+        a = a + ibl(seq(t)); % add to time
+    else % for the active modules
+        plot(a:(a+length(nanmean(bouts{1,seq(t)-numComp(1)}))+1),...
+            [b ((nanmean(bouts{1,seq(t)-numComp(1)})/28)+b) b],...
+            'color',cmap_cluster_merge(seq(t),:),'linewidth',15); % plot
+        a = a + length(nanmean(bouts{1,seq(t)-numComp(1)})) + 1; % add to time
+    end
+end
+
+axis tight
+axis off
+
+% Count motif usage  
+a = 1; 
+for f = find(i_experiment_reps == er)'
+    data(1,a) = gCount{f,1}(s,1);
+    a = a + 1;
+end 
+
+% Figure 
+figure; hold on; set(gca,'FontName','Calibri'); box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
+
+for g = 1:max(i_group_tags(i_experiment_reps == er)) % for each group 
+    spread_cols = plotSpread(data(:,i_group_tags(i_experiment_reps == er) == g)',...
+        'xyOri','flipped','spreadWidth',1/max(i_group_tags(i_experiment_reps == er)),...
+        'distributionColors',...
+        cmap{set_token}(g,:)+(1-cmap{set_token}(g,:))*(1-(1/(5)^.5)),'XValues',...
+        (1:size(data,1)) + (max(i_group_tags(i_experiment_reps == er))-1)/10 - (g-1)/10);
+    set(findall(gca,'type','line'),'markersize',30); % change marker size 
+    
+    legend_cols(g,:) = errorbar(nanmean(data(:,i_group_tags(i_experiment_reps == er) == g),2),...
+        ((1:size(data,1)) + (max(i_group_tags(i_experiment_reps == er))-1)/10 - (g-1)/10),...
+        nanstd(data(:,i_group_tags(i_experiment_reps == er) == g)'),...
+        'horizontal','o','linewidth',3,'color',cmap{set_token}(g,:),'capsize',9);
+    legend_cell{g} = horzcat(' ',geno_list{set_token}.colheaders{g},', n = ',...
+        num2str(sum(i_group_tags(i_experiment_reps == er) == g)));
+    
+end
+
+
+xlabel('Motif Counts','Fontsize',32);
+set(gca,'YTick',[]);
+axis([minmax(data) ylim])
