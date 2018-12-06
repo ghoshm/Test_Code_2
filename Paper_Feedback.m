@@ -188,7 +188,7 @@ load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'geno_list');
 
 % Choose dataset 
-er = 3;
+er = 3; 
 
 % Choose Motif (Melatonin 44,768)
 s = comps_v{er,1}(1,1);
@@ -230,7 +230,6 @@ end
 
 % Figure 
 figure; hold on; set(gca,'FontName','Calibri'); box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
-
 for g = 1:max(i_group_tags(i_experiment_reps == er)) % for each group 
     spread_cols = plotSpread(data(:,i_group_tags(i_experiment_reps == er) == g)',...
         'xyOri','flipped','spreadWidth',1/max(i_group_tags(i_experiment_reps == er)),...
@@ -243,8 +242,6 @@ for g = 1:max(i_group_tags(i_experiment_reps == er)) % for each group
         ((1:size(data,1)) + (max(i_group_tags(i_experiment_reps == er))-1)/10 - (g-1)/10),...
         nanstd(data(:,i_group_tags(i_experiment_reps == er) == g)'),...
         'horizontal','o','linewidth',3,'color',cmap{set_token}(g,:),'capsize',9);
-    legend_cell{g} = horzcat(' ',geno_list{set_token}.colheaders{g},', n = ',...
-        num2str(sum(i_group_tags(i_experiment_reps == er) == g)));
     
 end
 
