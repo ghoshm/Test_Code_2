@@ -249,3 +249,83 @@ end
 xlabel('Motif Counts','Fontsize',32);
 set(gca,'YTick',[]);
 axis([minmax(data) ylim])
+
+%% Temporal Correlation 
+
+% Settings 
+secs = 15; % hard coded, correlation lag window (seconds)
+    % NOTE: Must look for longer than 20.04 seconds 
+    
+% Load data 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'states');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'fps');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'lb_merge');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'time_window'); 
+
+temp = states{1,1}; % fish x frames
+temp = temp(:,lb_merge{1,1}(time_window{1}(1)):lb_merge{1,1}(time_window{1}(2)+1)); % crop data  
+
+% Pre-allocate 
+scrap_corr = NaN(size(temp,1),(secs*fps{1}*2)+1,100,'single'); % fish x corr lags x pariwise comparisons (hard coded)
+
+for f = 1 % for each fish
+    tic
+    scrap_corr_f = temp(f,:); % fish f's data
+    counter = 1; % counts pairwise comparisons
+    
+    for a = 1:10 % for each module 
+        for b = 1:10 % for each module  
+            scrap_corr(f,:,counter) = ...
+                xcorr(subplus(diff(scrap_corr_f == a)),subplus(diff(scrap_corr_f == b)),...
+                secs*fps{1},'coeff');
+            % 'coeff' — Normalizes the sequence so that the autocorrelations at zero lag equal 1:
+            counter = counter + 1; % add to counter 
+        end 
+    end 
+    toc
+    
+end 
+
+%% Coding the transitions 
+clear scrap_corr_trans
+scrap_corr_trans = [ones(5,5) ; ones(5,5)*2 ]; 
+scrap_corr_trans = [scrap_corr_trans scrap_corr_trans + 2]; 
+scrap_corr_trans = scrap_corr_trans(:); 
+
+%% Figure 
+cols = NaN(length(scrap_corr_trans),3); 
+
+for c = 1:4 
+    cols(scrap_corr_trans == c,:) = lbmap(25,'BlueGray'); 
+end 
+
+clf;
+for i = 1:4
+subplot(1,4,i); axis([-5,5,0,0.07]); hold on; 
+end
+for i = 1:100
+    subplot(1,4,scrap_corr_trans(i)); 
+    plot(-secs:(1/fps{1}):secs,scrap_corr(1,:,i),'color',cols(i,:));
+end
+
+
+% Insert
+axes('Position',[0.8 0.5 0.1 0.4]); hold on; 
+box off; set(gca, 'Layer','top'); set(gca,'Fontsize',16); set(gca,'FontName','Calibri'); % Set Font
+counter = 1; % start a counter 
+for a = 1:10 % for each module
+    for b = 1:10 % for each module 
+        scatter(a,b,90,'markerfacecolor',cols(counter,:),...
+            'markeredgecolor',cols(counter,:)); % scatter a marker
+        counter = counter + 1; % add to counter 
+    end
+end
+
+%% Working 
+
+cols = flip(lbmap(55,'RedBlue')); % generate colormap  
+
+% Skew
+skew = NaN(10,10);
+[~,I] = max(r);
+skew(a,b) = lags(I)/25;
