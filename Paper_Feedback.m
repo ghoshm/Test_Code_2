@@ -628,14 +628,11 @@ clear er anova_group anova_experiment anova_time t anova_development d data
     % Adapted from mRMR_Ideas.m
     
 % Structure Data 
-% Organised to be:
-        % rows = all day mRMR_data, then all night mRMR_data 
-        % columns = sequences 
-load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'bout_proportions');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'bout_proportions'); % fish x modules x days/nights
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'i_experiment_reps');
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'i_group_tags');
 
-bout_proportions{1,1} = permute(bout_proportions{1,1},[1 3 2]);
+bout_proportions{1,1} = permute(bout_proportions{1,1},[1 3 2]); % now: fish x days/nights x modules
 bout_proportions{2,1} = permute(bout_proportions{2,1},[1 3 2]);
 
 %% WT Day and Night 
@@ -645,23 +642,38 @@ mRMR_data{er,1} = double([reshape(bout_proportions{2,1}(i_experiment_reps == er,
 mRMR_tw{er,1} = [ones(sum(i_experiment_reps == 1),1) ; ones(sum(i_experiment_reps == 1),1)*2]; 
 mRMR_tw{er,1} = [mRMR_tw{er,1} ; mRMR_tw{er,1}]; 
 
-%% Hcrtr Day and Night 
+%% WT Day 5 vs Day 6
+er = 1; 
+mRMR_data{er,1} = double([reshape(bout_proportions{2,1}(i_experiment_reps == er,[3 5],:),[],5,1) ...
+    reshape(bout_proportions{1,1}(i_experiment_reps == er,[3 5],:),[],5,1)]);
+mRMR_tw{er,1} = [ones(sum(i_experiment_reps == 1),1) ; ones(sum(i_experiment_reps == 1),1)*2]; 
+
+%% WT Night 5 vs Night 6 
+er = 1; 
+mRMR_data{er,1} = double([reshape(bout_proportions{2,1}(i_experiment_reps == er,[4 6],:),[],5,1) ...
+    reshape(bout_proportions{1,1}(i_experiment_reps == er,[4 6],:),[],5,1)]);
+mRMR_tw{er,1} = [ones(sum(i_experiment_reps == 1),1) ; ones(sum(i_experiment_reps == 1),1)*2]; 
+
+%% Hcrtr Day and Night (Pairwise)
 er = 2; 
 mRMR_data{er,1} = double([reshape(bout_proportions{2,1}(i_experiment_reps == er,3:6,:),[],5,1) ...
     reshape(bout_proportions{1,1}(i_experiment_reps == er,3:6,:),[],5,1)]);
 mRMR_tw{er,1} = repmat(i_group_tags(i_experiment_reps == er),4,1);
+comps = 10; 
 
-%% Hcrtr Day
+%% Hcrtr Day (Pairwise)
 er = 2; 
 mRMR_data{er,1} = double([reshape(bout_proportions{2,1}(i_experiment_reps == er,[3 5],:),[],5,1) ...
     reshape(bout_proportions{1,1}(i_experiment_reps == er,[3 5],:),[],5,1)]);
 mRMR_tw{er,1} = repmat(i_group_tags(i_experiment_reps == er),2,1);
+comps = 10; 
 
-%% Hcrtr Night 
+%% Hcrtr Night (Pairwise) 
 er = 2; 
 mRMR_data{er,1} = double([reshape(bout_proportions{2,1}(i_experiment_reps == er,[4 6],:),[],5,1) ...
     reshape(bout_proportions{1,1}(i_experiment_reps == er,[4 6],:),[],5,1)]);
 mRMR_tw{er,1} = repmat(i_group_tags(i_experiment_reps == er),2,1);
+comps = 10; 
 
 %% Melatonin (Day) 
 er = 3; 
@@ -677,7 +689,7 @@ mRMR_tw{er,1} = i_group_tags(i_experiment_reps == er);
 
 %% "Leave one out" Classifiers 
 
-comps = 10; % number of modules to use
+comps = 10; % number of modules to use (all)
 
 tic
 counter = 1;
