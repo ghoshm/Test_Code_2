@@ -731,7 +731,79 @@ end
 
 toc
 
-%% Figure 
+%% Module Classifiers - Load Data (Experiment Colours) 
+load('C:\Users\Marcus\Documents\Thesis\Tables\Draft_1_Mdl_Loss\Mdl_Loss_Data.mat'); 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\mRMR_Comparisons\Modules\module_data.mat');
+motif_data = data([1:3 30:end],1:2);
+tags = MdlLossTags([1:3 30:end],1);
+clear data MdlLossTags; 
 
-% Similar to Compression Comparison
-    % X / Y CE Error -/+ Std 
+% Colormaps 
+cmap(1:3,:) = repmat(([1 1 1]*(1-(1/(9)^.5))),3,1); % grey
+cmap(4:12,:) = repmat([1 0.5 0],9,1); % orange   
+cmap(13:19,:) = repmat([0 0.6178 0.8519],7,1); % blue 
+cmap(20:23,:) = repmat([0.6863 0.2078 0.2784],4,1); % red
+
+%% Module Classifiers - Figure
+  
+figure;
+hold on; set(gca,'FontName','Calibri');
+plot([0 54],[0 54],'--k','linewidth',3); % Hard coded line 
+
+for i = 1:length(tags)
+    errorbar(module_data(i,1), motif_data(i,1),...
+        motif_data(i,2)/2,motif_data(i,2)/2,...
+        module_data(i,2)/2,module_data(i,2)/2,...
+        'color',cmap(i,:),...
+        'marker','o','linewidth',3);
+end
+
+box off; set(gca,'Layer','top'); set(gca,'Fontsize',32); % Format
+xlabel({'Module' ; 'Classification Error (%)'},'Fontsize',32); % Y Labels
+ylabel({'Motif' ; 'Classification Error (%)'},'Fontsize',32); % Y Labels
+axis([0 54 0 54]); 
+
+
+%% Module Classifiers - Load Data (Group Colours) 
+load('C:\Users\Marcus\Documents\Thesis\Tables\Draft_1_Mdl_Loss\Mdl_Loss_Data.mat'); 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\mRMR_Comparisons\Modules\module_data.mat');
+motif_data = data([1:3 30:end],1:2);
+tags = MdlLossTags([1:3 30:end],1);
+clear data MdlLossTags; 
+
+% Colormaps 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap'); 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap_2');
+cmap{4} = [cmap{4}(2,:) ; cmap{4}(3,:) ; [1 0.5 0]]; % het, hom, orange 
+cmap = [cmap{1} ; cmap_2{1} ; cmap{4} ; cmap{4} ; cmap{4} ; ...
+    cmap{6} ; cmap{7}];
+experiment_reps = zeros(length(cmap),1); 
+experiment_reps(1:3) = 1; 
+experiment_reps(4:6) = 2; 
+experiment_reps(13:19) = 3; 
+experiment_reps(20:end) = 4;
+
+%% Module Classifiers - Figure
+  
+figure;
+for er = 1:max(experiment_reps) % for each group of experiments
+    set_token = find(experiment_reps == er,1,'first'); % settings
+    subplot(1,4,er); counter = 1; % counts groups for plots
+    hold on; set(gca,'FontName','Calibri'); clear scrap;
+    
+    for i = find(experiment_reps == er)'
+        errorbar(module_data(i,1), motif_data(i,1),...
+            motif_data(i,2)/2,motif_data(i,2)/2,...
+            module_data(i,2)/2,module_data(i,2)/2,...
+            'color',cmap(i,:),...
+            'marker','o','linewidth',3);
+    end
+        
+    box off; set(gca, 'Layer','top'); set(gca,'Fontsize',32); % Format
+    ylabel({'Module' ; 'Classification Error (%)'},'Fontsize',32); % Y Labels
+    ylabel({'Motif' ; 'Classification Error (%)'},'Fontsize',32); % Y Labels
+    axis tight
+    %axis([0.5 (max(i_group_tags(i_experiment_reps == er))*2)+.5 -0.022 0.0415]); % hard coded
+end
+
+clear er set_token g scrap counter data
