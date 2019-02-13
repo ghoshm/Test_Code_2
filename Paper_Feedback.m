@@ -807,3 +807,31 @@ for er = 1:max(experiment_reps) % for each group of experiments
 end
 
 clear er set_token g scrap counter data
+
+%% PCA Space  
+load('D:\Behaviour\SleepWake\Re_Runs\Clustered_Data\Draft_1\180515_1.mat');
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'idx_numComp_sorted');
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'cmap_cluster');
+
+options = statset('MaxIter',max_its); % Max number of GMM iterations
+
+for c = 1:max(idx_numComp_sorted{1,1}) % for each module 
+    tic
+     GMModels{c} = fitgmdist(X{1,1}(idx_numComp_sorted{1,1} == c,1:2),1,...
+     'Options',options,'RegularizationValue',...
+     rv,'Replicates',GMM_reps); % Fit k gaussians to sample, GMM_reps times
+    GMModles_pdf{c} = pdf(GMModels{c},X{1,1}(idx_numComp_sorted{1,1} == c,1:2));
+    toc
+end 
+
+%% Figure
+
+for c = max(idx_numComp_sorted{1,1}):-1:1
+    scatter3(X{1,1}(idx_numComp_sorted{1,1} == c,1),...
+        X{1,1}(idx_numComp_sorted{1,1} == c,2),...
+        GMModles_pdf{c},0.1,'filled',...
+        'MarkerEdgeColor',cmap_cluster{1,1}(c,:),...
+        'MarkerFaceColor',cmap_cluster{1,1}(c,:)); 
+    
+    hold on;
+end
