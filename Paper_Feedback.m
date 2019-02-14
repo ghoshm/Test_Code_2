@@ -815,23 +815,30 @@ load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 
 
 options = statset('MaxIter',max_its); % Max number of GMM iterations
 
-for c = 1:max(idx_numComp_sorted{1,1}) % for each module 
-    tic
-     GMModels{c} = fitgmdist(X{1,1}(idx_numComp_sorted{1,1} == c,1:2),1,...
-     'Options',options,'RegularizationValue',...
-     rv,'Replicates',GMM_reps); % Fit k gaussians to sample, GMM_reps times
+for c = 1:max(idx_numComp_sorted{1,1}) % for each module
+    
+    GMModels{c} = fitgmdist(X{1,1}(idx_numComp_sorted{1,1} == c,1:2),1,...
+        'Options',options,'RegularizationValue',...
+        rv,'Replicates',GMM_reps); % Fit k gaussians to sample, GMM_reps times
+    
     GMModles_pdf{c} = pdf(GMModels{c},X{1,1}(idx_numComp_sorted{1,1} == c,1:2));
-    toc
-end 
+end
 
 %% Figure
 
-for c = max(idx_numComp_sorted{1,1}):-1:1
+for c = max(idx_numComp_sorted{1,1}):-1:1 % for each module
     scatter3(X{1,1}(idx_numComp_sorted{1,1} == c,1),...
         X{1,1}(idx_numComp_sorted{1,1} == c,2),...
-        GMModles_pdf{c},0.1,'filled',...
+        GMModles_pdf{c},2,'filled',...
         'MarkerEdgeColor',cmap_cluster{1,1}(c,:),...
         'MarkerFaceColor',cmap_cluster{1,1}(c,:)); 
     
     hold on;
 end
+
+set(gca,'FontName','Calibri');
+box off; set(gca, 'Layer','top'); set(gca,'Fontsize',32); % Format
+xlabel('PC1','Fontsize',32); % x Label
+ylabel('PC2','Fontsize',32); % Y Label
+zlabel('Probability','Fontsize',32);
+axis tight
