@@ -842,3 +842,81 @@ xlabel('PC1','Fontsize',32); % x Label
 ylabel('PC2','Fontsize',32); % Y Label
 zlabel('Probability','Fontsize',32);
 axis tight
+
+%% Bout Shapes Figure - Edit 
+
+% Load Data
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat',...
+    'bouts','cmap_cluster','fps','numComp','unit_conversion',...
+    'parameter_dists','units');
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'cells');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'idx_numComp_sorted');
+
+% Cropping Pdfs by Module Minimums and Maximums 
+scrap(:,1) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'min'); 
+scrap(:,2) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'max'); 
+scrap(1,:) = []; 
+
+for c = 1:size(scrap,1) % for each module 
+    parameter_dists{2,1}(c,1:scrap(c,1)-2) = NaN;
+    parameter_dists{2,1}(c,scrap(c,2)+2:end) = NaN;
+end 
+
+% Active Shapes 
+% Plotting variables
+for b = 1:size(bouts,2) % for each cluster
+    bs_l(b) = size(bouts{1,b},2); % find the max length
+end
+
+bs_l = max(bs_l); % max length
+
+figure;
+subplot(1,2,1); hold on; set(gca,'FontName','Calibri');
+for b = 1:size(bouts,2) % for each bout type 
+    legend_lines(b) = shadedErrorBar(1:(size(bouts{1,b},2)+2),...
+        nanmean([zeros(size(bouts{1,b},1),1) bouts{1,b} zeros(size(bouts{1,b},1),1)]),...
+        nanstd([zeros(size(bouts{1,b},1),1) bouts{1,b} zeros(size(bouts{1,b},1),1)])/sqrt(size(bouts{1,1},1)),...
+        'lineProps',{'Color',cmap_cluster{1,1}(b,:),'LineWidth',3});
+    legend_cols(b) = legend_lines(b).mainLine; % Store color
+end
+
+box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
+axis([1 bs_l ylim]);
+set(gca,'XTick',2:2:bs_l);
+set(gca,'XTickLabels',{(round((1:2:bs_l)/fps{1},2,'decimals'))}); % hard coded
+xlabel('Time (Seconds)','Fontsize',32);
+ylabel('? Pixels','Fontsize',32);
+title(horzcat('Active Modules'),'Fontsize',32);
+
+% Legend 
+[~,icons,plots,~] = legend(flip(legend_cols),string(numComp(1):-1:1),'Location','best');
+legend('boxoff'); 
+set(icons(1:numComp(1)),'Fontsize',32) ; set(plots,'LineWidth',3);
+
+% Inactive Module Fits 
+clear legend_lines legend_cols; 
+subplot(1,2,2); hold on;
+box off; set(gca,'Layer','top'); set(gca,'Fontsize',32); set(gca,'FontName','Calibri'); % Set Font
+
+for c = size(scrap,1):-1:1 % for each module 
+    legend_lines(c) = plot(parameter_dists{2,1}(c,:),...
+        'Color',cmap_cluster{2,1}(c,:),'LineWidth',0.001); % draw a thin line for the legned 
+    area(parameter_dists{2,1}(c,:),...
+         'EdgeColor',[1 1 1],'FaceColor',cmap_cluster{2,1}(c,:)); 
+end 
+
+set(gca,'XTick',[1 10 fps{1}*60]); 
+set(gca,'XTickLabel',{0.04 0.40 60.00})
+axis([1 fps{1}*60 0 max(parameter_dists{2,1}(:))]);
+set(gca,'XScale','log'); % set log axis
+xlabel('Time (Seconds)','Fontsize',32);
+ylabel('Probability','Fontsize',32); % Y label
+
+% Legend 
+[~,icons,~,~] = legend(flip(legend_lines),string(numComp(2):-1:1),'Location','best');
+legend('boxoff'); 
+set(icons(1:numComp(2)),'Fontsize',32) ; 
+set(icons(6:end),'LineWidth',3);
+title(horzcat('Inactive Modules'),'Fontsize',32);
+
+clear b bs_l legend_lines legend_cols icons plots s p crop k  
