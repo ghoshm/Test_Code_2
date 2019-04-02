@@ -1016,9 +1016,10 @@ figure;
 movie(s,1,v.FrameRate) % Play the movie at the native framerate
 
 %Write the Video
-vOut = VideoWriter('C:\Users\Marcus\Desktop\Video_Test.avi','Archival');
+vOut = VideoWriter('C:\Users\Marcus\Desktop\Video_Test.avi','MPEG-4');
 vOut.FrameRate = v.FrameRate;
-%vOut.Quality = 100; 
+vOut.Quality = 100; 
+%vOut.LosslessCompression = true; 
 open(vOut)
 for k = 1:numel(s)
     writeVideo(vOut,s(k));
