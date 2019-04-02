@@ -920,3 +920,107 @@ set(icons(6:end),'LineWidth',3);
 title(horzcat('Inactive Modules'),'Fontsize',32);
 
 clear b bs_l legend_lines legend_cols icons plots s p crop k  
+
+%% Video 
+
+v = VideoReader('D:\Behaviour\SleepWake\Videos\171013_18_19\171013_18_19_c97_0001.avi');
+
+vidWidth = v.Width;
+vidHeight = v.Height;
+
+mov = struct('cdata',zeros(vidHeight,vidWidth,3,'uint64'),...
+    'colormap',[]); % pre-allocate
+
+k = 1;
+while hasFrame(v)
+    mov(k).cdata = readFrame(v);
+    k = k+1;
+end
+
+%% Delta Px Data 
+
+load('D:\Behaviour\SleepWake\Videos\171013_18_19\delta_px_sq.mat');
+
+% Normalise Data
+delta_px_sq = delta_px_sq./max(delta_px_sq); % normalise 
+delta_px_sq(isnan(delta_px_sq) == 1) = 0; % remove NaN Values 
+
+% Rescale 
+delta_px_sq = delta_px_sq * 50; % hard coded scalar 
+
+% Remove Extra Frames 
+delta_px_sq(1:5,:) = [];
+
+fps = v.framerate; % get framerate
+
+%% Video
+%Positions Vector
+sc = [90 , 150]; % Starting coordinates (hard coded)
+x = 72; % X distance between wells (hard coded)
+y = 74; % Y distance between wells (hard coded)
+
+p = 1; % For each position
+for r = 1:8 % For each row (Hard coded)
+    for c = 1:12 % For each column (Hard coded)
+        well_positions(p,:) = [sc(1)+((c*x)-x), sc(2)+((r*y)-y)];
+        p = p+1;
+    end
+end
+
+% Visually Check Grid 
+% figure; 
+% imagesc(mov(1).cdata);
+% hold on
+% scatter(well_positions(:,1),well_positions(:,2));
+
+% Making the Video
+data_frames = fps:(fps*30 + fps - 1); % Take 5s of video
+
+% Pre-allocate a strucutre to store video frames
+s(length(data_frames)) = struct('cdata',[],'colormap',[]);
+
+set(0,'DefaultFigureVisible','off'); % Suppress figures from popping up
+
+for i = data_frames %For each frame
+    
+    h = axes('position',[0 0 1 1]); % Initial axis
+    image(mov(i).cdata); hold on; %Draw the frame
+    set(gca,'XTick',[]); % Remove x-axis ticks
+    set(gca,'YTick',[]); % Remove y-axis ticks
+    
+    % Fish Behaviour
+    for f = 1:size(delta_px_sq,2) % for each fish
+        plot(well_positions(f,1):(well_positions(f,1)+fps-1),...
+            (well_positions(f,2) - delta_px_sq((i-fps+1):i,f)),...
+            'color',[0.3922 0.5843 0.9294],'linewidth',3); % Plot 1s of data before this frame
+        
+        % To this frame
+        scatter(well_positions(f,1)+fps-1,well_positions(f,2) - delta_px_sq(i,f),...
+            20,'MarkerFaceColor',...
+            'k','MarkerEdgeColor','none'); % Draw a black Dot at the current value
+    end
+    
+    % Storing frames with drawings on top
+    drawnow;
+    s(i+1-fps) = getframe(h); % Grab the frame 
+    disp(num2str(i+1-fps)); % Report back the frames
+    close all % ! % Note this two commands incrase the writing speed
+    hold off % !  % By decreasing the amount of data held in RAM
+    
+end
+
+set(0,'DefaultFigureVisible','on') % Allow figures to pop up again
+
+figure;
+% Open a new figure and play the movie from the structure
+movie(s,1,v.FrameRate) % Play the movie at the native framerate
+
+%Write the Video
+vOut = VideoWriter('C:\Users\Marcus\Desktop\Video_Test.avi','Archival');
+vOut.FrameRate = v.FrameRate;
+%vOut.Quality = 100; 
+open(vOut)
+for k = 1:numel(s)
+    writeVideo(vOut,s(k));
+end
+close(vOut)
