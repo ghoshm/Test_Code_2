@@ -974,7 +974,7 @@ end
 % scatter(well_positions(:,1),well_positions(:,2));
 
 % Making the Video
-data_frames = fps:(fps*30 + fps - 1); % Take 5s of video
+data_frames = fps:(fps*30 + fps - 1); % Take 30s of video
 
 % Pre-allocate a strucutre to store video frames
 s(length(data_frames)) = struct('cdata',[],'colormap',[]);
