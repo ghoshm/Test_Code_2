@@ -948,7 +948,7 @@ delta_px_sq(isnan(delta_px_sq) == 1) = 0; % remove NaN Values
 % Rescale 
 delta_px_sq = delta_px_sq * 50; % hard coded scalar 
 
-% Remove Extra Frames 
+% Remove Extra Frames (hard coded)
 delta_px_sq(1:5,:) = [];
 
 fps = v.framerate; % get framerate
