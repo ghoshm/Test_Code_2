@@ -1138,3 +1138,367 @@ for s = 1:2 % for active & inactive
 end
 
 clear counter s p crop k s_2
+
+%% Module Video - Preparing Model 
+
+load('D:\Behaviour\SleepWake\Re_Runs\Clustered_Data\Draft_1\Pre.mat', 'wake_cells');
+load('D:\Behaviour\SleepWake\Re_Runs\Clustered_Data\Draft_1\Pre.mat', 'fish_tags');
+
+% Active 
+tic
+X{1,1} = []; % empty X
+% Z-score each fishes data
+for f = 1:max(fish_tags{1,1}) % for each fish
+    X{1,1} = [X{1,1} ; zscore(wake_cells(fish_tags{1,1} == f,3:end))];
+    if mod(f,100) == 0 % report every 100 fish 
+        disp(horzcat('Completed ',num2str(f),' fish of ',...
+            num2str(max(fish_tags{1,1}))));
+    end
+end
+toc
+
+mu = mean(X{1,1}); % mean Model feature values 
+
+clearvars -except mu
+
+%% Module Video - Load Clustered Data  
+load('D:\Behaviour\SleepWake\Re_Runs\Clustered_Data\Draft_1\Pre.mat','wake_cells','sleep_cells'); 
+active = load('D:\Behaviour\SleepWake\Re_Runs\Clustered_Data\Draft_1\180515_1.mat','idx');
+inactive = load('D:\Behaviour\SleepWake\Re_Runs\Clustered_Data\Draft_1\180515_2.mat','idx'); 
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'numComp')
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'sleep_cells_nan_track')
+
+% merge variables 
+idx{1,1} = active.idx; idx{2,1} = inactive.idx; 
+
+clear active inactive
+
+% Remove NaN Values from Sleep matracies  
+sleep_cells(sleep_cells_nan_track,3) = NaN; % sleep cells 
+idx{2,1}(sleep_cells_nan_track,1) = NaN; % cluster assignments  
+
+% Merge Variables for ease of Looping 
+cells{1,1} = wake_cells; 
+cells{2,1} = sleep_cells; % cells 
+
+%% Module Video - Sorting Clusters by Mean Length 
+             
+for s = 1:2 % for active & inactive
+    mean_cluster_length = nan(1,numComp(s),'single'); % pre-allocate
+    for c = 1:numComp(s) % For each cluster
+        mean_cluster_length(c) = nanmean(cells{s,1}(idx{s,1}==c,3));
+        % Calculate mean bout length
+    end
+    
+    [~,O] = sort(mean_cluster_length); % Sort by increasing bout length
+    
+    cluster_order(s,:) = O; 
+    
+    clear s mean_cluster_length c O;
+end
+
+clearvars -except mu cluster_order  
+
+%% Module Video - Load Video  
+
+v = VideoReader('D:\Behaviour\SleepWake\Videos\171013_18_19\171013_18_19_c97_0001.avi');
+
+vidWidth = v.Width;
+vidHeight = v.Height;
+
+mov = struct('cdata',zeros(vidHeight,vidWidth,3,'uint64'),...
+    'colormap',[]); % pre-allocate
+
+k = 1;
+while hasFrame(v)
+    mov(k).cdata = readFrame(v);
+    k = k+1;
+end
+
+%% Module - Delta Px Data 
+
+load('D:\Behaviour\SleepWake\Videos\171013_18_19\delta_px_sq.mat');
+
+% Normalise Data
+delta_px_sq = delta_px_sq./max(delta_px_sq); % normalise 
+delta_px_sq(isnan(delta_px_sq) == 1) = 0; % remove NaN Values 
+
+% Rescale 
+delta_px_sq = delta_px_sq * 50; % hard coded scalar 
+
+% Remove Extra Frames (hard coded)
+delta_px_sq(1:5,:) = [];
+
+fps = v.framerate; % get framerate
+
+%% Modules - Extract Bouts 
+
+% Pre-allocate 
+wake_cells = cell(1,size(delta_px_sq,2)); % Wake Cells (bout parameters)  
+sleep_cells = cell(1,size(delta_px_sq,2)); % Sleep Cells (bout parameters) 
+
+% Finding transitions
+delta_px_sq_scrap = delta_px_sq; 
+delta_px_sq_scrap(delta_px_sq_scrap > 0) = 1; % Find active frames 
+delta_px_sq_scrap = diff(delta_px_sq_scrap); % Diff to find transitions  
+    % 1 = inactive to active 
+    % -1 = active to inactive 
+ 
+for f = 1:size(delta_px_sq,2) % For each fish 
+    
+    % Starts - ensures no bouts are lost at the start  
+    if  delta_px_sq(1,f) > 0 % If active in first bin  
+        wake_cells{1,f}(:,1) = [1 ; find(delta_px_sq_scrap(:,f) == 1)+1]; % Find active bout starts
+        sleep_cells{1,f}(:,1) = (find(delta_px_sq_scrap(:,f) == -1)+1); % Find sleep bout starts 
+    else % Ie. if inactive in first bin 
+        wake_cells{1,f}(:,1) = find(delta_px_sq_scrap(:,f) == 1)+1; % Find active bout starts 
+        sleep_cells{1,f}(:,1) = [1 ; (find(delta_px_sq_scrap(:,f) == -1)+1)]; % Find sleep bout starts 
+    end 
+    
+    % Ends - ensures no bouts are lost at the end 
+    if delta_px_sq(size(delta_px_sq,1),f) > 0 % If active in last bin 
+        wake_cells{1,f}(:,2) = [find(delta_px_sq_scrap(:,f) == - 1);...
+            size(delta_px_sq,1)]; % Find active bout ends
+        sleep_cells{1,f}(:,2) = find(delta_px_sq_scrap(:,f) == 1); % Find sleep bout ends
+    else 
+        wake_cells{1,f}(:,2) = find(delta_px_sq_scrap(:,f) == - 1); 
+        sleep_cells{1,f}(:,2) = [(find(delta_px_sq_scrap(:,f) == 1)) ; size(delta_px_sq,1)]; % Find sleep bout ends
+    end
+    
+    % Parameter extraction 
+    wake_cells{1,f}(:,3:8) = NaN; % Pre-allocate 
+    wake_cells{1,f}(:,3) = (wake_cells{1,f}(:,2)+1) - wake_cells{1,f}(:,1); % Wake Bout Length 
+    sleep_cells{1,f}(:,3) = (sleep_cells{1,f}(:,2)+1) - sleep_cells{1,f}(:,1); % Sleep Bout Length 
+
+    % Active bouts 
+    for b = 1:size(wake_cells{1,f},1) % For each active bout
+        wake_cells{1,f}(b,4) = nanmean(delta_px_sq(wake_cells{1,f}(b,1):...
+            wake_cells{1,f}(b,2),f)); % Mean
+        wake_cells{1,f}(b,5) = nanstd(delta_px_sq(wake_cells{1,f}(b,1):...
+            wake_cells{1,f}(b,2),f)); % Std
+        wake_cells{1,f}(b,6) = nansum(delta_px_sq(wake_cells{1,f}(b,1):...
+            wake_cells{1,f}(b,2),f)); % Total
+        wake_cells{1,f}(b,7) = nanmin(delta_px_sq(wake_cells{1,f}(b,1):...
+            wake_cells{1,f}(b,2),f)); % Min
+        wake_cells{1,f}(b,8) = nanmax(delta_px_sq(wake_cells{1,f}(b,1):...
+            wake_cells{1,f}(b,2),f)); % Max
+    end
+end 
+
+% Concatenate variables
+% cells{1,1} = []; 
+% cells{2,1} = []; 
+fish_tags{1,1} = []; 
+fish_tags{2,1} = []; 
+counter = 1;
+for i = 1:size(wake_cells,2) % For each fish
+%     cells{1,1} = [cells{1,1} ; wake_cells{1,i}]; % wake cells
+%     cells{2,1} = [cells{2,1} ; sleep_cells{1,i}]; % sleep cells
+    fish_tags{1,1} = [fish_tags{1,1} ; ones(size(wake_cells{1,i},1),1)*counter]; % wake fish tags
+    fish_tags{2,1} = [fish_tags{2,1} ; ones(size(sleep_cells{1,i},1),1)*counter]; % sleep fish tags
+    counter = counter + 1; % add to fish counter
+end
+
+wake_cells = cell2mat(wake_cells'); % check arrangement
+sleep_cells = cell2mat(sleep_cells'); % check arrangmenet 
+
+%% Preparing New Data   
+
+% Active 
+X{1,1} = []; % empty X
+% Z-score each fishes data
+for f = 1:max(fish_tags{1,1}) % for each fish
+    X{1,1} = [X{1,1} ; zscore(wake_cells(fish_tags{1,1} == f,3:end))];
+end
+
+% Load Model 
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'coeff');
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'score');
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'knee_dim'); 
+
+% Fit To Model's PCA Basis 
+% https://stackoverflow.com/questions/13303300/how-to-project-a-new-point-to-pca-new-basis#
+X{1,1} = bsxfun(@minus,X{1,1}, mu); % subtract old means from new data 
+X{1,1} = X{1,1}*coeff; % project new data into pca basis 
+X{1,1} = X{1,1}(:,1:knee_dim); % crop to number of PC's 
+
+% Inactive 
+X{2,1} = []; % empty X
+X{2,1} = sleep_cells(:,3); 
+
+% Convert from frames to seconds  
+X{2,1} = X{2,1}/fps; 
+
+%% Assigning New Data to Clusters 
+
+% Load variables 
+nn = 50; 
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'sample_a_n');
+Mdl = load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'X'); 
+Mdl = Mdl.X; % old data in PCA / Frame space 
+Mdl{2,1} = Mdl{2,1}/fps; % convert from Frames to seconds  
+
+for s = 1:2 % for active and inactive
+    disp('Fitting data into clusters'); % report progress
+    
+    ea_idx_n = sample_a_n{s,1}(:,2); % normalised cluster indicies
+    
+    idx{s,1} = zeros(size(X{s,1},1),1,'single'); % allocate
+    cks = [1:round(size(X{s,1},1)/1000):size(X{s,1},1) (size(X{s,1},1)+1)]; % break into 1000 chunks
+    for i = 1:(length(cks) - 1) % for each chunk
+        kn = knnsearch(Mdl{s,1}(sample_a_n{s,1}(:,1),:),X{s,1}(cks(i):(cks(i+1)-1),:),...
+            'K',nn); % find nn nearest neighbours
+        idx{s,1}(cks(i):(cks(i+1)-1),1) = ...
+            mode(reshape(ea_idx_n(kn(:)),size(kn)),2); % assign to mode neighbour cluster
+    end
+end
+
+% Convert back to frames
+X{2,1} = X{2,1}*25; 
+
+Mdl{2,1} = Mdl{2,1}*25; % convert from Frames to seconds  
+
+%% Module - Video Sorting Clusters by Model Length 
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'numComp'); 
+
+for s = 1:2 % for active & inactive
+    
+    O = cluster_order(s,:);
+    
+    idx_numComp_sorted{s,1} = nan(size(idx{s,1},1),1,'single'); % Pre-allocate
+    
+    for c = 1:numComp(s)  % For each cluster
+        idx_numComp_sorted{s,1}(idx{s,1} == O(c),:) = c;
+        % Re-assign cluster numbers
+    end
+    
+    clear s O c
+end
+
+clear idx
+
+%% Module Video - Threading 
+
+% Pre-allocation
+threads = cell(max(fish_tags{1,1}),2); % fish x (clusters,times (start & stop)
+idx_numComp_sorted{1,1} = idx_numComp_sorted{1,1} + max(idx_numComp_sorted{2,1}); % Assign higher numbers to the wake bouts
+idx_numComp_sorted{2,1}(isnan(idx_numComp_sorted{2,1})) = 0; % replace nan-values with zero
+
+for f = 1:max(fish_tags{1,1}) % For each fish
+    % Pre-allocate
+    % Data
+    threads{f,1,1} = nan(size(find(fish_tags{1,1} == f),1) + ...
+        size(find(fish_tags{2,1} == f),1),1,'single'); % clusters
+    threads{f,2,1} = nan(size(threads{f,1,1},1),2,'single'); % times (start & stop)
+    
+    % Deterime starting state (a = active, b = inactive)
+    if wake_cells(find(fish_tags{1,1} == f,1,'first'),1) == 1 % If the fish starts active
+        a = 1; b = 2; % start active
+    else % If the fish starts inactive
+        a = 2; b = 1; % start inactive
+    end
+    
+    % Fill in data
+    % Clusters
+    threads{f,1,1}(a:2:end,1) = idx_numComp_sorted{1,1}...
+        (fish_tags{1,1} == f,1); % Fill in active clusters
+    threads{f,1,1}(b:2:end,1) = idx_numComp_sorted{2,1}...
+        (fish_tags{2,1} == f,1); % Fill in inactive clusters
+    % Times
+    threads{f,2,1}(a:2:end,1:2) = wake_cells...
+        (fish_tags{1,1} == f,1:2); % Fill in active times
+    threads{f,2,1}(b:2:end,1:2) = sleep_cells...
+        (fish_tags{2,1} == f,1:2); % Fill in inactive times
+
+end 
+
+%% Module Video - States 
+
+% Pre-allocate data
+states = nan(size(delta_px_sq));
+
+% Fill data in
+for f = 1:size(states,2) % for each fish
+    for b = 1:size(threads{f,1,1},1) % for each bout
+        states(threads{f,2,1}(b,1):...
+            threads{f,2,1}(b,2),f) = ...
+            threads{f,1,1}(b,1); % Fill in cluster number
+    end
+end
+    
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap_cluster_merge');
+
+%% Module Video - Video
+%Positions Vector
+sc = [90 , 150]; % Starting coordinates (hard coded)
+x = 72; % X distance between wells (hard coded)
+y = 74; % Y distance between wells (hard coded)
+
+p = 1; % For each position
+for r = 1:8 % For each row (Hard coded)
+    for c = 1:12 % For each column (Hard coded)
+        well_positions(p,:) = [sc(1)+((c*x)-x), sc(2)+((r*y)-y)];
+        p = p+1;
+    end
+end
+
+% Visually Check Grid 
+% figure; 
+% imagesc(mov(1).cdata);
+% hold on
+% scatter(well_positions(:,1),well_positions(:,2));
+
+% Making the Video
+data_frames = fps:(fps*30 + fps - 1); % Take 30s of video
+
+% Pre-allocate a strucutre to store video frames
+s(length(data_frames)) = struct('cdata',[],'colormap',[]);
+
+set(0,'DefaultFigureVisible','off'); % Suppress figures from popping up
+
+for i = data_frames %For each frame
+    
+    h = axes('position',[0 0 1 1]); % Initial axis
+    image(mov(i).cdata); hold on; %Draw the frame
+    set(gca,'XTick',[]); % Remove x-axis ticks
+    set(gca,'YTick',[]); % Remove y-axis ticks
+    colormap(cmap_cluster_merge); % set colormap 
+    
+    % Fish Behaviour
+    for f = 1:size(delta_px_sq,2) % for each fish
+
+        clinep((well_positions(f,1):(well_positions(f,1)+fps-1)),...
+            (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))',...
+            zeros(1,25),states((i-fps+1):i,f)',4)
+        
+        % To this frame
+        scatter(well_positions(f,1)+fps-1,well_positions(f,2) - delta_px_sq(i,f),...
+            20,'MarkerFaceColor',...
+            'k','MarkerEdgeColor','none'); % Draw a black Dot at the current value
+    end
+    
+    % Storing frames with drawings on top
+    drawnow;
+    s(i+1-fps) = getframe(h); % Grab the frame 
+    disp(num2str(i+1-fps)); % Report back the frames
+    close all % ! % Note this two commands incrase the writing speed
+    hold off % !  % By decreasing the amount of data held in RAM
+    
+end
+
+set(0,'DefaultFigureVisible','on') % Allow figures to pop up again
+
+figure;
+% Open a new figure and play the movie from the structure
+movie(s,1,v.FrameRate) % Play the movie at the native framerate
+
+%Write the Video
+vOut = VideoWriter('C:\Users\Marcus\Desktop\Video_Test.avi','MPEG-4');
+vOut.FrameRate = v.FrameRate;
+vOut.Quality = 100; 
+%vOut.LosslessCompression = true; 
+open(vOut)
+for k = 1:numel(s)
+    writeVideo(vOut,s(k));
+end
+close(vOut)
