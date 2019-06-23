@@ -1025,3 +1025,116 @@ for k = 1:numel(s)
     writeVideo(vOut,s(k));
 end
 close(vOut)
+
+%% Cluster Parameters - Fits Figure (Inactive Bout Length Corrected) 
+
+% Load data 
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat',...
+    'cells','parameters','unit_conversion','parameter_dists',...
+    'cmap_cluster','units','numComp');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'idx_numComp_sorted');
+
+% Cropping Pdfs by Module Minimums and Maximums 
+scrap(:,1) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'min'); 
+scrap(:,2) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'max'); 
+scrap(1,:) = []; 
+
+for c = 1:size(scrap,1) % for each module 
+    parameter_dists{2,1}(c,1:scrap(c,1)-2) = NaN;
+    parameter_dists{2,1}(c,scrap(c,2)+2:end) = NaN;
+end 
+ 
+%% Figure 
+figure;
+counter = 1; % start a counter 
+for s = 1:2 % for active & inactive
+    for p = 3:size(cells{s,1},2) % For each parameter
+        % Figure Settings
+        subplot(2,4,counter); hold on;
+        box off; set(gca,'Layer','top'); set(gca,'Fontsize',12); set(gca,'FontName','Calibri'); % Set Font
+        if s ~= 2 % for active parameters 
+            title(parameters{1}{p-2}); % Add title
+        else % for inactive bout length 
+            title(parameters{1}{10}); % Add title   
+        end
+        
+        % Plot 
+        if min(cells{s,1}(:,p)) == 0 % shift from zero (for log scaling)
+            cells{s,1}(:,p) = cells{s,1}(:,p) + 1;
+            off_set = 1;
+        end
+        
+        crop = max(cells{s,1}(:,p)); 
+        
+        if s == 1 % if active 
+            for k = 1:numComp(s) % for each cluster
+                plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+                    parameter_dists{s,p-2}(k,:),'color',cmap_cluster{s,1}(k,:),'linewidth',3);
+            end
+        else % if inactive 
+            for k = numComp(s):-1:1 % for each cluster
+                plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+                    parameter_dists{s,p-2}(k,:),'color',cmap_cluster{s,1}(k,:),'linewidth',0.001);
+                area((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+                    parameter_dists{s,p-2}(k,:),...
+                    'EdgeColor',[1 1 1],'FaceColor',cmap_cluster{2,1}(k,:));
+            end
+        end 
+
+        % Axes 
+        try 
+            set(gca,'XTick',...
+                [min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2), (min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2))*10,...
+                crop/unit_conversion{1}(s,p-2)]); % set x tick labels
+        catch 
+            set(gca,'XTick',...
+                [min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2), (crop/unit_conversion{1}(s,p-2))/2,...
+                crop/unit_conversion{1}(s,p-2)]); % set x tick labels
+        end 
+        axis([min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2) crop/unit_conversion{1}(s,p-2) ...
+            min(parameter_dists{s,p-2}(:)) max(parameter_dists{s,p-2}(:))]); % Set axis limits
+        
+        % Set decimal places depending on units
+        if unit_conversion{1}(s,p-2) > 1
+            xtickformat('%.2f');
+        else
+            xtickformat('%.0f');
+        end
+        
+        if exist('off_set','var') == 1  % check to see if data was shited from zero
+            cells{s,1}(:,p) = cells{s,1}(:,p) - 1; % remove 1 from data
+            set(gca,'XTickLabels',string(cellfun(@str2num,get(gca,'XTickLabels')) - 1)); % remove 1 from x-labels
+            clear off_set;
+        end
+  
+        set(gca,'XScale','log'); % set log axis
+        xlabel(units{1}(p-2),'Fontsize',12); % X labels
+        ylabel('Probability','Fontsize',12); % Y label
+        
+        counter = counter + 1; % add to counter 
+        
+        % Legend Plot 
+        if counter == 8 
+            subplot(2,4,counter); hold on;
+            box off; set(gca,'Layer','top'); set(gca,'Fontsize',12); set(gca,'FontName','Calibri'); % Set Font
+            title('Legend'); 
+            
+            for s_2 = 1:2 % for active & inactive 
+                for k = 1:numComp(s_2) % for each cluster 
+                    scatter(k,mod(s_2,2),300,...
+                        'markerfacecolor',cmap_cluster{s_2,1}(k,:),...
+                        'markeredgecolor',cmap_cluster{s_2,1}(k,:));
+                end 
+            end 
+            
+            axis([0 max(numComp)+1 -1 2]);
+            xlabel('Module Number','Fontsize',12); % X labels
+            set(gca,'XTick',1:max(numComp)); 
+            set(gca,'YTick',[0 1]); 
+            set(gca,'YTickLabels',{'Inactive','Active'},'Fontsize',12);
+        end 
+        
+    end
+end
+
+clear counter s p crop k s_2
