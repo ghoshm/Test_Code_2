@@ -1466,16 +1466,20 @@ for i = data_frames %For each frame
     
     % Fish Behaviour
     for f = 1:size(delta_px_sq,2) % for each fish
-
-        clinep((well_positions(f,1):(well_positions(f,1)+fps-1)),...
-            (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))',...
-            zeros(1,25),states((i-fps+1):i,f)',4)
-        
-        % To this frame
+        % Older Option 
+        seq(1,:) = well_positions(f,1):(well_positions(f,1)+fps-1); 
+        seq(2,:) = (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))'; 
+        seq(3,:) = states((i-fps+1):i,f)'; 
+        for t = 1:(length(seq)-1)
+            % Plot 
+            plot([seq(1,t),seq(1,t+1)],[seq(2,t),seq(2,t+1)],...)
+                'color',cmap_cluster_merge(max([seq(3,t) seq(3,t+1)]),:),...)
+                'linewidth',3)
+        end
         scatter(well_positions(f,1)+fps-1,well_positions(f,2) - delta_px_sq(i,f),...
-            20,'MarkerFaceColor',...
-            'k','MarkerEdgeColor','none'); % Draw a black Dot at the current value
-    end
+            20,0,'MarkerFaceColor',cmap_cluster_merge(states(i,f),:),...
+            'MarkerEdgeColor','none'); % Draw a black Dot at the current value
+     end
     
     % Storing frames with drawings on top
     drawnow;
@@ -1502,3 +1506,32 @@ for k = 1:numel(s)
     writeVideo(vOut,s(k));
 end
 close(vOut)
+
+%% Scrap Code 
+%             % Scatter
+%             scatter([seq(1,t) seq(1,t)],[seq(2,t) seq(2,t)],...
+%                 'markerfacecolor',cmap_cluster_merge(seq(3,t),:),...
+%                 'markeredgecolor',cmap_cluster_merge(seq(3,t),:));
+%         % Old Code 
+%         for t = 1:length(seq) % for each module in the sequence
+%             if seq(t) <= numComp(1) % for the inactive modules
+%                 plot([a (a+ibl(seq(t)))],[b b],...
+%                     'color',cmap_cluster_merge(seq(t),:),'linewidth',5); % plot
+%                 a = a + ibl(seq(t)); % add to time
+%             else % for the active modules
+%                 plot(a:(a+length(nanmean(bouts{1,seq(t)-numComp(1)}))+1),...
+%                     [b ((nanmean(bouts{1,seq(t)-numComp(1)})/28)+b) b],...
+%                     'color',cmap_cluster_merge(seq(t),:),'linewidth',5); % plot
+%                 a = a + length(nanmean(bouts{1,seq(t)-numComp(1)})) + 1; % add to time
+%             end
+%         end
+%     
+%         % One Option 
+%         clinep((well_positions(f,1):(well_positions(f,1)+fps-1)),...
+%             (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))',...
+%             zeros(1,fps),states((i-fps+1):i,f)',4);
+        
+        % To this frame
+%         scatter(well_positions(f,1)+fps-1,well_positions(f,2) - delta_px_sq(i,f),...
+%             60,0,'MarkerFaceColor',cmap_cluster_merge(states(i,f),:),...
+%             'MarkerEdgeColor','none'); % Draw a black Dot at the current value
