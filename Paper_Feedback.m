@@ -1219,13 +1219,6 @@ end
 
 load('D:\Behaviour\SleepWake\Videos\171013_18_19\delta_px_sq.mat');
 
-% Normalise Data
-delta_px_sq = delta_px_sq./max(delta_px_sq); % normalise 
-delta_px_sq(isnan(delta_px_sq) == 1) = 0; % remove NaN Values 
-
-% Rescale 
-delta_px_sq = delta_px_sq * 50; % hard coded scalar 
-
 % Remove Extra Frames (hard coded)
 delta_px_sq(1:5,:) = [];
 
@@ -1299,8 +1292,8 @@ for i = 1:size(wake_cells,2) % For each fish
     counter = counter + 1; % add to fish counter
 end
 
-wake_cells = cell2mat(wake_cells'); % check arrangement
-sleep_cells = cell2mat(sleep_cells'); % check arrangmenet 
+wake_cells = cell2mat(wake_cells'); % merge cells 
+sleep_cells = cell2mat(sleep_cells'); % merge cells
 
 %% Preparing New Data   
 
@@ -1356,9 +1349,9 @@ end
 % Convert back to frames
 X{2,1} = X{2,1}*25; 
 
-Mdl{2,1} = Mdl{2,1}*25; % convert from Frames to seconds  
+Mdl{2,1} = Mdl{2,1}*25;   
 
-%% Module - Video Sorting Clusters by Model Length 
+%% Module - Video Sorting Clusters by Module Length 
 load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'numComp'); 
 
 for s = 1:2 % for active & inactive
@@ -1428,6 +1421,15 @@ end
     
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap_cluster_merge');
 
+%% Module Video - Rescale Data 
+
+% Normalise Data
+delta_px_sq = delta_px_sq./max(delta_px_sq); % normalise 
+delta_px_sq(isnan(delta_px_sq) == 1) = 0; % remove NaN Values 
+
+% Rescale 
+delta_px_sq = delta_px_sq * 50; % hard coded scalar 
+
 %% Module Video - Video
 %Positions Vector
 sc = [90 , 150]; % Starting coordinates (hard coded)
@@ -1466,20 +1468,20 @@ for i = data_frames %For each frame
     
     % Fish Behaviour
     for f = 1:size(delta_px_sq,2) % for each fish
-        % Older Option 
-        seq(1,:) = well_positions(f,1):(well_positions(f,1)+fps-1); 
-        seq(2,:) = (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))'; 
-        seq(3,:) = states((i-fps+1):i,f)'; 
+        % Draw Data
+        seq(1,:) = well_positions(f,1):(well_positions(f,1)+fps-1);
+        seq(2,:) = (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))';
+        seq(3,:) = states((i-fps+1):i,f)';
         for t = 1:(length(seq)-1)
-            % Plot 
+            % Plot
             plot([seq(1,t),seq(1,t+1)],[seq(2,t),seq(2,t+1)],...)
                 'color',cmap_cluster_merge(max([seq(3,t) seq(3,t+1)]),:),...)
-                'linewidth',3)
+                'linewidth',3);
         end
         scatter(well_positions(f,1)+fps-1,well_positions(f,2) - delta_px_sq(i,f),...
             20,0,'MarkerFaceColor',cmap_cluster_merge(states(i,f),:),...
             'MarkerEdgeColor','none'); % Draw a black Dot at the current value
-     end
+    end
     
     % Storing frames with drawings on top
     drawnow;
@@ -1506,32 +1508,3 @@ for k = 1:numel(s)
     writeVideo(vOut,s(k));
 end
 close(vOut)
-
-%% Scrap Code 
-%             % Scatter
-%             scatter([seq(1,t) seq(1,t)],[seq(2,t) seq(2,t)],...
-%                 'markerfacecolor',cmap_cluster_merge(seq(3,t),:),...
-%                 'markeredgecolor',cmap_cluster_merge(seq(3,t),:));
-%         % Old Code 
-%         for t = 1:length(seq) % for each module in the sequence
-%             if seq(t) <= numComp(1) % for the inactive modules
-%                 plot([a (a+ibl(seq(t)))],[b b],...
-%                     'color',cmap_cluster_merge(seq(t),:),'linewidth',5); % plot
-%                 a = a + ibl(seq(t)); % add to time
-%             else % for the active modules
-%                 plot(a:(a+length(nanmean(bouts{1,seq(t)-numComp(1)}))+1),...
-%                     [b ((nanmean(bouts{1,seq(t)-numComp(1)})/28)+b) b],...
-%                     'color',cmap_cluster_merge(seq(t),:),'linewidth',5); % plot
-%                 a = a + length(nanmean(bouts{1,seq(t)-numComp(1)})) + 1; % add to time
-%             end
-%         end
-%     
-%         % One Option 
-%         clinep((well_positions(f,1):(well_positions(f,1)+fps-1)),...
-%             (well_positions(f,2) - delta_px_sq((i-fps+1):i,f))',...
-%             zeros(1,fps),states((i-fps+1):i,f)',4);
-        
-        % To this frame
-%         scatter(well_positions(f,1)+fps-1,well_positions(f,2) - delta_px_sq(i,f),...
-%             60,0,'MarkerFaceColor',cmap_cluster_merge(states(i,f),:),...
-%             'MarkerEdgeColor','none'); % Draw a black Dot at the current value
