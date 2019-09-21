@@ -1508,3 +1508,70 @@ for k = 1:numel(s)
     writeVideo(vOut,s(k));
 end
 close(vOut)
+
+%% Random Selection Control - Load Data 
+er = 2; 
+
+% Load mRMR data 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'mRMR_tw');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'mRMR_data');
+
+% Load motif subset sizes (e.g.) 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\mRMR_Comparisons\Comps_250\Melatonin_D.mat', 'mRMR_ms');
+
+% Delete unnecessary data (e.g.) 
+% REMOVE NIGHTS FROM OTHERS 
+mRMR_data{er,1}(2:2:end,:) = []; 
+mRMR_tw{er,1}(2:2:end,:) = []; 
+
+% Remove Negative Values 
+mRMR_data{er,1}(mRMR_data{er,1} < 0) = 0; 
+
+%% Random Selection Control - "Leave one out" Classifiers 
+
+% Pairwise Comparisons
+tic
+counter = 1;
+for g_one = min(mRMR_tw{er,1}):max(mRMR_tw{er,1}) % for each group (hour)
+    
+    tags = ones(size(mRMR_tw{er,1}))*2; % all data (marked as 2)
+    tags(mRMR_tw{er,1} == g_one) = 1; % group of interest (marked as 1) 
+    
+    % Classifiers
+    % Fit a linear classifier as you add features
+    % Using 10 fold cross validation
+    % Hold 10% of mRMR_data back by default
+    scrap(1,1:10) = NaN;
+    % Remove Columns with Zero Variance 
+    mRMR_data{er,1}(:,var(mRMR_data{er,1}) == 0) = [];
+    for s = 1:10
+        
+        while isnan(scrap(1,s)) == 1
+            Mdl = fitcdiscr(...
+                zscore(datasample(mRMR_data{er,1},...
+                mRMR_ms(er,counter),2,'Replace',false)),...
+                tags,...
+                'DiscrimType','linear','CrossVal','on');
+            try
+                scrap(1,s) = kfoldLoss(Mdl);
+            catch
+                scrap(1,s) = NaN;
+            end
+        end
+        
+    end
+    
+    Mdl_loss{er,1}(counter,1) = nanmean(scrap);
+    Mdl_loss{er,2}(counter,1) = nanstd(scrap);
+    
+    % Remove WT data
+    if counter == 1 
+       mRMR_data{er,1}(mRMR_tw{er,1} == 1,:) = [];
+       mRMR_tw{er,1}(mRMR_tw{er,1} == 1,:) = []; 
+    end
+    
+    disp(num2str(counter));
+    counter = counter + 1;
+end
+
+toc
