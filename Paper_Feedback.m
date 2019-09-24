@@ -1603,3 +1603,7 @@ for g_one = min(mRMR_tw{er,1}):max(mRMR_tw{er,1}) % for each group (hour)
 end
 
 toc
+
+%% Save Data 
+
+clearvars -except comps comps_v er set_token Mdl_loss mRMR_data mRMR_tw mRMR_ms mRMR_tsne 
