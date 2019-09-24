@@ -1510,16 +1510,16 @@ end
 close(vOut)
 
 %% Random Selection Control - Load Data 
-er = 3; 
+er = 1; 
 
 % Load mRMR data 
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'mRMR_tw');
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'mRMR_data');
 
-% Load motif subset sizes (e.g.) 
+%% Load motif subset sizes (e.g.) 
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\mRMR_Comparisons\Comps_250\Melatonin_D.mat', 'mRMR_ms');
 
-% Delete unnecessary data 
+%% Delete unnecessary data 
 % WT Keep Days 
 mRMR_data{er,1}(249:end,:) = []; 
 mRMR_tw{er,1}(249:end,:) = []; 
@@ -1547,6 +1547,10 @@ mRMR_data{er,1}(mRMR_tw{er,1} <= 14,:) = []; % keep only some data
 mRMR_tw{er,1}(mRMR_tw{er,1} <= 14,:) = []; % keep only some data
 mRMR_tw{1,1}(mRMR_tw{1,1} <= 19,:) = 1;
 mRMR_tw{1,1}(mRMR_tw{1,1} > 19,:) = 2; 
+
+% Remove Genotype 
+mRMR_data{er,1}(mRMR_tw{er,1} == 3,:) = [];
+mRMR_tw{er,1}(mRMR_tw{er,1} == 3,:) = []; 
 
 %% Remove Negative Values 
 mRMR_data{er,1}(mRMR_data{er,1} < 0) = 0; 
