@@ -1510,7 +1510,7 @@ end
 close(vOut)
 
 %% Random Selection Control - Load Data 
-er = 1; 
+er = 2; 
 
 % Load mRMR data 
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'mRMR_tw');
@@ -1548,9 +1548,9 @@ mRMR_tw{er,1}(mRMR_tw{er,1} <= 14,:) = []; % keep only some data
 mRMR_tw{1,1}(mRMR_tw{1,1} <= 19,:) = 1;
 mRMR_tw{1,1}(mRMR_tw{1,1} > 19,:) = 2; 
 
-% Remove Genotype 
-mRMR_data{er,1}(mRMR_tw{er,1} == 3,:) = [];
-mRMR_tw{er,1}(mRMR_tw{er,1} == 3,:) = []; 
+%% Remove Genotype 
+mRMR_data{er,1}(mRMR_tw{er,1} == 1,:) = [];
+mRMR_tw{er,1}(mRMR_tw{er,1} == 1,:) = []; 
 
 %% Remove Negative Values 
 mRMR_data{er,1}(mRMR_data{er,1} < 0) = 0; 
@@ -1592,11 +1592,11 @@ for g_one = min(mRMR_tw{er,1}):max(mRMR_tw{er,1}) % for each group (hour)
     Mdl_loss{er,1}(counter,1) = nanmean(scrap);
     Mdl_loss{er,2}(counter,1) = nanstd(scrap);
     
-    % Remove WT data
-    if counter == 1 
-       mRMR_data{er,1}(mRMR_tw{er,1} == 1,:) = [];
-       mRMR_tw{er,1}(mRMR_tw{er,1} == 1,:) = []; 
-    end
+%     % Remove WT data
+%     if counter == 1 
+%        mRMR_data{er,1}(mRMR_tw{er,1} == 1,:) = [];
+%        mRMR_tw{er,1}(mRMR_tw{er,1} == 1,:) = []; 
+%     end
     
     disp(num2str(counter));
     counter = counter + 1;
@@ -1607,3 +1607,200 @@ toc
 %% Save Data 
 
 clearvars -except comps comps_v er set_token Mdl_loss mRMR_data mRMR_tw mRMR_ms mRMR_tsne 
+
+%% Bout Shapes Figure - Edit 2 
+
+% Load Data
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat',...
+    'bouts','cmap_cluster','fps','numComp','unit_conversion',...
+    'units');
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat', 'cells');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'idx_numComp_sorted');
+
+% Cropping Pdfs by Module Minimums and Maximums 
+scrap(:,1) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'min'); 
+scrap(:,2) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'max'); 
+scrap(1,:) = []; 
+
+% Fit PDF
+pd = fitdist(cells{2,1}(:,3),'kernel','Width',1); % Fit
+pdf_data = pdf(pd,min(cells{2,1}(:,3)):max(cells{2,1}(:,3)));
+            
+% Active Shapes 
+% Plotting variables
+for b = 1:size(bouts,2) % for each cluster
+    bs_l(b) = size(bouts{1,b},2); % find the max length
+end
+
+bs_l = max(bs_l); % max length
+
+figure;
+subplot(1,2,1); hold on; set(gca,'FontName','Calibri');
+for b = 1:size(bouts,2) % for each bout type 
+    legend_lines(b) = shadedErrorBar(1:(size(bouts{1,b},2)+2),...
+        nanmean([zeros(size(bouts{1,b},1),1) bouts{1,b} zeros(size(bouts{1,b},1),1)]),...
+        nanstd([zeros(size(bouts{1,b},1),1) bouts{1,b} zeros(size(bouts{1,b},1),1)])/sqrt(size(bouts{1,1},1)),...
+        'lineProps',{'Color',cmap_cluster{1,1}(b,:),'LineWidth',3});
+    legend_cols(b) = legend_lines(b).mainLine; % Store color
+end
+
+box off; set(gca,'Layer','top'); set(gca,'Fontsize',32);
+axis([1 bs_l ylim]);
+set(gca,'XTick',2:2:bs_l);
+set(gca,'XTickLabels',{(round((1:2:bs_l)/fps{1},2,'decimals'))}); % hard coded
+xlabel('Time (Seconds)','Fontsize',32);
+ylabel('? Pixels','Fontsize',32);
+title(horzcat('Active Modules'),'Fontsize',32);
+
+% Legend 
+[~,icons,plots,~] = legend(flip(legend_cols),string(numComp(1):-1:1),'Location','best');
+legend('boxoff'); 
+set(icons(1:numComp(1)),'Fontsize',32) ; set(plots,'LineWidth',3);
+
+% Inactive Module Fits 
+clear legend_lines legend_cols; 
+subplot(1,2,2); hold on;
+box off; set(gca,'Layer','top'); set(gca,'Fontsize',32); set(gca,'FontName','Calibri'); % Set Font
+
+hold on
+for c = 1:numComp(2)
+    rectangle('Position',[scrap(c,1) 0 ((scrap(c,2)+1) - scrap(c,1)) (max(pdf_data) + 0.01)],...
+        'FaceColor',cmap_cluster{2,1}(c,:),'EdgeColor',cmap_cluster{2,1}(c,:))
+end 
+plot(pdf_data,'color','k','linewidth',3); 
+
+set(gca,'XTick',[1 10 fps{1}*60]); 
+set(gca,'XTickLabel',{0.04 0.40 60.00})
+axis([1 fps{1}*60 0 (max(pdf_data) + 0.01)]);
+set(gca,'XScale','log'); % set log axis
+xlabel('Time (Seconds)','Fontsize',32);
+ylabel('Probability','Fontsize',32); % Y label
+
+% Legend 
+title(horzcat('Inactive Modules'),'Fontsize',32);
+
+clear b bs_l legend_lines legend_cols icons plots s p crop k  
+
+%% Cluster Parameters - Fits Figure (V2) 
+
+% Load data 
+load('D:\Behaviour\SleepWake\Re_Runs\Post_State_Space_Data\Draft_1\180519.mat',...
+    'cells','parameters','unit_conversion','parameter_dists',...
+    'cmap_cluster','units','numComp');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'idx_numComp_sorted');
+
+% Cropping Pdfs by Module Minimums and Maximums 
+scrap(:,1) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'min'); 
+scrap(:,2) = grpstats(cells{2,1}(:,3),idx_numComp_sorted{2,1},'max'); 
+scrap(1,:) = []; 
+scrap = scrap/25; 
+
+% Fit PDF
+pd = fitdist(cells{2,1}(:,3),'kernel','Width',1); % Fit
+pdf_data = pdf(pd,min(cells{2,1}(:,3)):max(cells{2,1}(:,3)));
+ 
+%% Figure 
+figure;
+counter = 1; % start a counter 
+for s = 1:2 % for active & inactive
+    for p = 3:size(cells{s,1},2) % For each parameter
+        % Figure Settings
+        subplot(2,4,counter); hold on;
+        box off; set(gca,'Layer','top'); set(gca,'Fontsize',12); set(gca,'FontName','Calibri'); % Set Font
+        if s ~= 2 % for active parameters 
+            title(parameters{1}{p-2}); % Add title
+        else % for inactive bout length 
+            title(parameters{1}{10}); % Add title   
+        end
+        
+        % Plot 
+        if min(cells{s,1}(:,p)) == 0 % shift from zero (for log scaling)
+            cells{s,1}(:,p) = cells{s,1}(:,p) + 1;
+            off_set = 1;
+        end
+        
+        crop = max(cells{s,1}(:,p)); 
+        
+        if s == 1 % if active 
+            for k = 1:numComp(s) % for each cluster
+                plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+                    parameter_dists{s,p-2}(k,:),'color',cmap_cluster{s,1}(k,:),'linewidth',3);
+            end
+        else % if inactive 
+            for c = 1:numComp(s) % for each cluster
+                rectangle('Position',[scrap(c,1) 0 ((scrap(c,2)+1/25) - scrap(c,1)) (max(pdf_data) + 0.01)],...
+                    'FaceColor',cmap_cluster{2,1}(c,:),'EdgeColor',cmap_cluster{2,1}(c,:))
+                plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+                    pdf_data,'color','k','linewidth',3);
+                
+%                 plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+%                     parameter_dists{s,p-2}(k,:),'color',cmap_cluster{s,1}(k,:),'linewidth',0.001);
+%                 area((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+%                     parameter_dists{s,p-2}(k,:),...
+%                     'EdgeColor',[1 1 1],'FaceColor',cmap_cluster{2,1}(k,:));
+            end
+        end 
+
+        % Axes 
+        try 
+            set(gca,'XTick',...
+                [min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2), (min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2))*10,...
+                crop/unit_conversion{1}(s,p-2)]); % set x tick labels
+        catch 
+            set(gca,'XTick',...
+                [min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2), (crop/unit_conversion{1}(s,p-2))/2,...
+                crop/unit_conversion{1}(s,p-2)]); % set x tick labels
+        end 
+        
+        if s == 1
+            axis([min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2) crop/unit_conversion{1}(s,p-2) ...
+                min(parameter_dists{s,p-2}(:)) max(parameter_dists{s,p-2}(:))]); % Set axis limits
+        else
+            axis([min(cells{s,1}(:,p))/unit_conversion{1}(s,p-2) crop/unit_conversion{1}(s,p-2) ...
+                min(parameter_dists{s,p-2}(:)) (max(pdf_data) + 0.01)]); % Set axis limits
+        end
+        
+        % Set decimal places depending on units
+        if unit_conversion{1}(s,p-2) > 1
+            xtickformat('%.2f');
+        else
+            xtickformat('%.0f');
+        end
+        
+        if exist('off_set','var') == 1  % check to see if data was shited from zero
+            cells{s,1}(:,p) = cells{s,1}(:,p) - 1; % remove 1 from data
+            set(gca,'XTickLabels',string(cellfun(@str2num,get(gca,'XTickLabels')) - 1)); % remove 1 from x-labels
+            clear off_set;
+        end
+  
+        set(gca,'XScale','log'); % set log axis
+        xlabel(units{1}(p-2),'Fontsize',12); % X labels
+        ylabel('Probability','Fontsize',12); % Y label
+        
+        counter = counter + 1; % add to counter 
+        
+        % Legend Plot 
+        if counter == 8 
+            subplot(2,4,counter); hold on;
+            box off; set(gca,'Layer','top'); set(gca,'Fontsize',12); set(gca,'FontName','Calibri'); % Set Font
+            title('Legend'); 
+            
+            for s_2 = 1:2 % for active & inactive 
+                for k = 1:numComp(s_2) % for each cluster 
+                    scatter(k,mod(s_2,2),300,...
+                        'markerfacecolor',cmap_cluster{s_2,1}(k,:),...
+                        'markeredgecolor',cmap_cluster{s_2,1}(k,:));
+                end 
+            end 
+            
+            axis([0 max(numComp)+1 -1 2]);
+            xlabel('Module Number','Fontsize',12); % X labels
+            set(gca,'XTick',1:max(numComp)); 
+            set(gca,'YTick',[0 1]); 
+            set(gca,'YTickLabels',{'Inactive','Active'},'Fontsize',12);
+        end 
+        
+    end
+end
+
+clear counter s p crop k s_2
