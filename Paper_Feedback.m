@@ -1729,16 +1729,15 @@ for s = 1:2 % for active & inactive
         else % if inactive 
             for c = 1:numComp(s) % for each cluster
                 rectangle('Position',[scrap(c,1) 0 ((scrap(c,2)+1/25) - scrap(c,1)) (max(pdf_data) + 0.01)],...
-                    'FaceColor',cmap_cluster{2,1}(c,:),'EdgeColor',cmap_cluster{2,1}(c,:))
-                plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
-                    pdf_data,'color','k','linewidth',3);
-                
+                    'FaceColor',cmap_cluster{2,1}(c,:),'EdgeColor',cmap_cluster{2,1}(c,:))                            
 %                 plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
 %                     parameter_dists{s,p-2}(k,:),'color',cmap_cluster{s,1}(k,:),'linewidth',0.001);
 %                 area((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
 %                     parameter_dists{s,p-2}(k,:),...
 %                     'EdgeColor',[1 1 1],'FaceColor',cmap_cluster{2,1}(k,:));
             end
+             plot((min(cells{s,1}(:,p)):crop)/unit_conversion{1}(s,p-2),...
+                    pdf_data,'color','k','linewidth',3);
         end 
 
         % Axes 
