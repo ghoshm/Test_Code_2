@@ -1803,3 +1803,52 @@ for s = 1:2 % for active & inactive
 end
 
 clear counter s p crop k s_2
+
+%% Euclidean Distances
+
+% Load Data
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'gCount_norm');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'i_experiment_reps');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'i_group_tags');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap_2');
+
+
+%% Shape Vectors 
+
+% WT 
+WT_day = squeeze(gCount_norm{1}(:,5,i_experiment_reps == 1))';
+WT_night = squeeze(gCount_norm{1}(:,6,i_experiment_reps == 1))';
+
+% Melatonin
+Mel_day = squeeze(gCount_norm{1,1}(:,1,i_experiment_reps == 3))';
+
+%% Euclidean Distances 
+
+% WT 
+WT_Day_ED(1,:) = pdist2(nanmean(WT_day),WT_day);
+WT_Day_ED(2,:) = pdist2(nanmean(WT_night),WT_day);
+WT_Night_ED(1,:) = pdist2(nanmean(WT_day),WT_night);
+WT_Night_ED(2,:) = pdist2(nanmean(WT_night),WT_night);
+
+% Melatonin 
+Mel_ED(1,:) = pdist2(nanmean(WT_day),Mel_day);
+Mel_ED(2,:) = pdist2(nanmean(WT_night),Mel_day);
+
+%% Figure 
+figure; hold on; 
+axis([200 1000 200 1000]); 
+plot([200 1000],[200 1000],'--k','linewidth',3);
+
+scatter(WT_Day_ED(1,:),WT_Day_ED(2,:),'markeredgecolor',cmap_2{1}(1,:));
+scatter(WT_Night_ED(1,:),WT_Night_ED(2,:),'markeredgecolor',cmap_2{1}(2,:));
+
+groups = i_group_tags(i_experiment_reps == 3)';
+for g = 1:max(groups)
+    
+    scatter(Mel_ED(1,groups == g),Mel_ED(2,groups == g),...
+        'markerfacecolor',cmap{6}(g,:),...
+        'markeredgecolor',cmap{6}(g,:)); 
+end 
+xlabel('Euclidean Distance From WT Day Mean')
+ylabel('Euclidean Distance From WT Night Mean')
