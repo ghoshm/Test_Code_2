@@ -26,13 +26,14 @@ subplot(1,2,1); hold on; set(gca,'FontName','Calibri'); set(gca,'Fontsize',32);
 title(horzcat('Active Modules'));
 temp = states{1,1}; 
 temp(temp <= 5) = NaN; % hard coded
+temp = temp - 5; 
 temp = temp(:,lb_merge{1,1}(time_window{1}(1)):lb_merge{1,1}(time_window{1}(2)+1)); 
 ax = imagesc(temp,...
     'AlphaData',isnan(temp)==0); 
 
 colormap(gca,cmap_cluster{1,1}); % active colormap
 box off; set(gca,'Layer','top'); 
-%set(ax,'CDataMapping','direct');
+set(ax,'CDataMapping','direct');
 set(gca,'YDir','Reverse'); 
 c = colorbar; c.Label.String = 'Module';
 axis([(1 + 1 + time_bins)...
