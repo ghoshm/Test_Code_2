@@ -54,7 +54,8 @@ set(gca,'XtickLabels',{'Behaviour','Brains'},'Fontsize',32);
 set(gca,'Ytick',[]); 
 xlabel('Features','Fontsize',32); 
 axis tight
-colormap(flip(lbmap(num/6,'RedBlue'))); 
+cmap = flip(lbmap(9,'RedBlue'));
+colormap(cmap); 
 
 %% ASD 
 data = [reshape((datasample(1:num,(num/3)*1000)),num/3,[]); ...
@@ -77,7 +78,7 @@ sep = [sort(datasample(1:1000,10)) 1000];
 
 data = rand(1000);
 for i = 1:length(sep)-1
-    data(sep(i):sep(i+1),sep(i):sep(i+1)) = data(sep(i):sep(i+1),sep(i):sep(i+1))*4; 
+    data(sep(i):sep(i+1),sep(i):sep(i+1)) = data(sep(i):sep(i+1),sep(i):sep(i+1))+1; 
 end 
 
 ylabel('Genes','Fontsize',32); 

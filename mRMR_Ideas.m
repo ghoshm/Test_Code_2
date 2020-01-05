@@ -107,7 +107,7 @@ end
 toc 
 
 %% NEWER MESSING AROUND 
-data = gCount_norm{1,1}(comps_v{er,1}(2,1:mRMR_ms(er,2)),[4 6],i_experiment_reps == er);
+data = gCount_norm{1,1}(comps_v{er,1}(2,1:mRMR_ms(er,2)),[3 4 5 6],i_experiment_reps == er);
 
 data = reshape(data,mRMR_ms(er,2),[]); 
 

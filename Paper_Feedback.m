@@ -32,7 +32,7 @@ ax = imagesc(temp,...
 
 colormap(gca,cmap_cluster{1,1}); % active colormap
 box off; set(gca,'Layer','top'); 
-set(ax,'CDataMapping','direct');
+%set(ax,'CDataMapping','direct');
 set(gca,'YDir','Reverse'); 
 c = colorbar; c.Label.String = 'Module';
 axis([(1 + 1 + time_bins)...
