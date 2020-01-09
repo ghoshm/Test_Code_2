@@ -1866,3 +1866,61 @@ set(findall(gca,'type','line'),'markersize',15); % change
 ylabel('Euclidean Distance From WT Night Mean'); 
 set(gca,'xtick',1:max(groups) + 2); % Set x ticks
 set(gca,'xticklabel',['WT Day','WT Night',geno_list{6}.colheaders]); % Name each group
+
+%% Grammar Matrix Figure - Load Data 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'grammar_mat');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Grammar_Results_Final.mat', 'gCount'); 
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'cmap_2');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'night_color'); 
+
+%% Grammar Matrix Figure - Marginal 
+
+gCount_marginal = zeros(length(grammar_mat{1,1}),size(gCount,2)); 
+
+for r = 1:size(gCount,2) % for real / shuffled
+    for f = 1:length(gCount) % for each fish
+        gCount_marginal(:,r) = gCount_marginal(:,r) + sum(gCount{f,r},2);
+    end
+    
+    gCount_marginal(:,r) = gCount_marginal(:,r)/sum(gCount_marginal(:,r));
+    gCounts_dist(:,r) = accumarray(sum(isnan(grammar_mat{1,1})==0,2),gCount_marginal(:,r));
+end
+
+gCounts_dist(gCounts_dist == 0) = NaN; % remove zero values 
+
+%% Grammar Matrix Figure - Figure 
+
+subplot(1,2,2);
+hold on; set(gca,'FontName','Calibri'); clear scrap;
+box off; set(gca, 'Layer','top'); set(gca,'Fontsize',32); % Format
+
+% Lines 
+for le = 1:length(gCounts_dist) 
+    try 
+        plot([le le],...
+            [gCounts_dist(le,1) nanmean(gCounts_dist(le,2:end))],...
+            'color',night_color{1},'linewidth',3)
+    catch 
+    end 
+end 
+
+% Scatter 
+for r = 2:size(gCounts_dist,2) % for each shuffle
+    legend_cols(1) = scatter(1:length(gCounts_dist),gCounts_dist(:,r),90,...
+        'markerfacecolor','k','markeredgecolor','k',...
+            'markerfacealpha',0.5);
+end
+
+legend_cols(2) = scatter(1:length(gCounts_dist),gCounts_dist(:,1),90,...
+    'markerfacecolor',cmap_2{1,1}(1,:),...
+    'markeredgecolor',cmap_2{1,1}(1,:),...
+    'markerfacealpha',0.5); 
+
+% Formatting 
+xlabel('Motif Length');
+ylabel('Probability'); 
+
+[~,icons,plots,~] = legend(flip(legend_cols),...
+    [{'Real Data','Shuffled Data'}],'Location','best','FontSize',28.8);
+legend('boxoff'); 
+set(plots,'LineWidth',3); 
