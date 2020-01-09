@@ -1813,7 +1813,10 @@ load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'i_group_tags');
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap');
 load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'cmap_2');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'geno_list');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\Post_Bout_Transitions.mat', 'comps_v');
 
+er = 3; 
 
 %% Shape Vectors 
 
@@ -1822,34 +1825,44 @@ WT_day = squeeze(gCount_norm{1}(:,5,i_experiment_reps == 1))';
 WT_night = squeeze(gCount_norm{1}(:,6,i_experiment_reps == 1))';
 
 % Melatonin
-Mel_day = squeeze(gCount_norm{1,1}(:,1,i_experiment_reps == 3))';
+Mel_day = squeeze(gCount_norm{1}(:,1,i_experiment_reps == er))';
 
 %% Euclidean Distances 
 
 % WT 
-WT_Day_ED(1,:) = pdist2(nanmean(WT_day),WT_day);
-WT_Day_ED(2,:) = pdist2(nanmean(WT_night),WT_day);
-WT_Night_ED(1,:) = pdist2(nanmean(WT_day),WT_night);
-WT_Night_ED(2,:) = pdist2(nanmean(WT_night),WT_night);
+WT_Day_ED(1,:) = pdist2(nanmean(WT_night),WT_day);
+WT_Night_ED(1,:) = pdist2(nanmean(WT_night),WT_night);
 
 % Melatonin 
-Mel_ED(1,:) = pdist2(nanmean(WT_day),Mel_day);
-Mel_ED(2,:) = pdist2(nanmean(WT_night),Mel_day);
+Mel_ED(1,:) = pdist2(nanmean(WT_night),Mel_day);
 
 %% Figure 
-figure; hold on; 
-axis([200 1000 200 1000]); 
-plot([200 1000],[200 1000],'--k','linewidth',3);
 
-scatter(WT_Day_ED(1,:),WT_Day_ED(2,:),'markeredgecolor',cmap_2{1}(1,:));
-scatter(WT_Night_ED(1,:),WT_Night_ED(2,:),'markeredgecolor',cmap_2{1}(2,:));
+figure; 
+hold on; box off; set(gca, 'Layer','top'); set(gca,'Fontsize',32); set(gca,'FontName','Calibri'); % Set Font
 
-groups = i_group_tags(i_experiment_reps == 3)';
+% WT 
+% Day 
+spread_cols = plotSpread(WT_Day_ED(1,:)','xValues',1,...
+    'distributionColors',cmap_2{1}(1,:),'showMM',2);
+spread_cols{2}.LineWidth = 3; spread_cols{2}.Color = [1 0.5 0]; % Change marker properties
+
+% Night 
+spread_cols = plotSpread(WT_Night_ED(1,:)','xValues',2,...
+    'distributionColors',cmap_2{1}(2,:),'showMM',2);
+spread_cols{2}.LineWidth = 3; spread_cols{2}.Color = [1 0.5 0]; % Change marker properties
+
+% Melatonin 
+groups = i_group_tags(i_experiment_reps == er)';
 for g = 1:max(groups)
-    
-    scatter(Mel_ED(1,groups == g),Mel_ED(2,groups == g),...
-        'markerfacecolor',cmap{6}(g,:),...
-        'markeredgecolor',cmap{6}(g,:)); 
+    spread_cols = plotSpread(Mel_ED(1,groups == g)','xValues',g+2,...
+        'distributionColors',cmap{1,6}(g,:),'showMM',2);
+    spread_cols{2}.LineWidth = 3; spread_cols{2}.Color = [1 0.5 0]; % Change marker properties
 end 
-xlabel('Euclidean Distance From WT Day Mean')
-ylabel('Euclidean Distance From WT Night Mean')
+
+set(findall(gca,'type','line'),'markersize',15); % change
+
+% Nice Figure 
+ylabel('Euclidean Distance From WT Night Mean'); 
+set(gca,'xtick',1:max(groups) + 2); % Set x ticks
+set(gca,'xticklabel',['WT Day','WT Night',geno_list{6}.colheaders]); % Name each group
