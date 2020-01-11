@@ -1924,3 +1924,77 @@ set(gca,'XTick',2:4:20);
     [{'Real Data','Shuffled Data'}],'Location','best','FontSize',28.8);
 legend('boxoff'); 
 set(plots,'LineWidth',3); 
+
+%% Neighbour Correlations 
+
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180522.mat', 'states');
+load('D:\Behaviour\SleepWake\Re_Runs\Threading\Draft_1\180523.mat', 'cmap_2');
+
+data = states{4}(1:24,:); % PTZ control data 
+
+for f = 1:size(data,1) % for each fish 
+    data_d(f,:) = diff(data(f,:)); % find transitions 
+end 
+
+% Mark active bout starts (1) 
+data_d(data_d > 0) = 1; 
+data_d(data_d < 0) = 0; 
+
+% Pairwise Cross Correlation
+cors = NaN(size(data,1),(4*25)+1,size(data,1));
+
+tic
+for f = 1:size(data,1) % for each fish
+    for f_2 = 1:size(data,1) % for each fish
+        [cors(f_2,:,f),lags] = xcorr(data_d(f,:),data_d(f_2,:),2*25,'coeff');
+    end
+end
+toc
+
+%% Neighbour Binning 
+pos = [1:12 ; 13:24]; 
+f_mat = []; 
+ne_mat = []; 
+not_ne_mat = []; 
+
+for f = 1:size(data_d,1) % for each fish
+    
+    f_mat = [f_mat ; cors(f,:,f)];
+    
+    [~,ne] = ixneighbors_no_diags(pos,find(pos == f));
+    ne_mat = [ne_mat ; cors(pos(ne),:,f)];
+    
+    not_ne = setdiff(1:size(data_d,1),[f ; pos(ne)]);
+    not_ne_mat = [not_ne_mat ; cors(not_ne,:,f)];
+    
+end 
+
+%% Plotting 
+clf;
+hold on; set(gca,'FontName','Calibri'); 
+box off; set(gca, 'Layer','top'); set(gca,'Fontsize',32); % Format
+axis([min(lags) max(lags) 0 0.1])
+
+% Plot
+legend_lines(1) = shadedErrorBar(lags,nanmean(f_mat),nanstd(f_mat),'lineprops',...
+    {'color',[1 0.5 0]});
+legend_lines(2) = shadedErrorBar(lags,nanmean(not_ne_mat),nanstd(not_ne_mat),'lineprops',...
+    {'color',cmap_2{1}(2,:)});
+legend_lines(3) = shadedErrorBar(lags,nanmean(ne_mat),nanstd(ne_mat),'lineprops',...
+    {'color',cmap_2{1}(1,:)});
+
+legend_cols(1) = legend_lines(1).mainLine; % Store color
+legend_cols(2) = legend_lines(2).mainLine; % Store color
+legend_cols(3) = legend_lines(3).mainLine; % Store color
+
+legend_cell{1} = 'Autocorrelation';
+legend_cell{2} = 'Distant Fish';
+legend_cell{3} = 'Neighbour Fish';
+
+[~,icons,plots,~] = legend(legend_cols,legend_cell,'Location','northeast');
+legend('boxoff'); 
+set(icons(1:3),'Fontsize',32) ; set(plots,'LineWidth',3);
+
+xticklabels([-2 0 2]); 
+xlabel('Seconds')
+ylabel('Normalised Correlation');
