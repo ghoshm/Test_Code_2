@@ -1919,7 +1919,7 @@ legend_cols(2) = scatter(1:length(gCounts_dist),gCounts_dist(:,1),90,...
 % Formatting 
 xlabel('Motif Length');
 ylabel('Probability'); 
-
+set(gca,'XTick',2:4:20); 
 [~,icons,plots,~] = legend(flip(legend_cols),...
     [{'Real Data','Shuffled Data'}],'Location','best','FontSize',28.8);
 legend('boxoff'); 
